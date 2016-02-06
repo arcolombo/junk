@@ -6,3 +6,7 @@ Qusage can improve the speed of its algorithm by minimizing the cost of computai
 
 
 ![qusage profile](demo/qusageSingleBottleNeck.pdf "Plot of Qusage Profile")
+
+
+##changes calcIndividualExpressionsC
+trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up calcIndividualExpressionsC 2X
