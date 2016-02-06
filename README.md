@@ -5,4 +5,4 @@ Qusage can improve the speed of its algorithm by minimizing the cost of computai
 
 
 
-![qusage profile](demo/qusageSingleBottleNeck.pdf "Plot of Qusage Profile")
+![qusage profile](/demo/qusageSingleBottleNeck.pdf "Plot of Qusage Profile")
