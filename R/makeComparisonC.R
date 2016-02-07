@@ -1,3 +1,13 @@
+#' more efficient and faster comparison function
+#' @param eset       a matrix of log2(expression values), with rows of features and columns of samples
+#' @param labels      vector of labels representing each column of eset
+#' @param contrast    a string describing which of the groups in 'labels' we want to compare. This is usually of the form 'trt-ctrl', where 'trt' and 'ctrl' are groups represented in 'labels'
+#' @param pairVector  A vector of factors (usually just 1,2,3,etc.) describing the sample pairings. This is often just a vector of patient IDs or something similar. If not provided, all samples are assumed to be independent.
+#' @param var.equal   a logical variable indicating whether to treat the two variances as being equal. If TRUE then the pooled variance is used to estimate the variance otherwise the Welch approximation is used.
+#' @param bayesEstimation  if true, use a bayesian framework to estimate the standard deviation (via limma's eBayes function)
+#' @import limma
+#' @export
+#' @return   a Qusage array object
 makeComparisonC <- function(eset,       ##a matrix of log2(expression values), with rows of features and columns of samples 
                            labels,     ##vector of labels representing each column of eset.
                            contrast,   ##a string describing which of the groups in 'labels' we want to compare. This is usually of the form 'trt-ctrl', where 'trt' and 'ctrl' are groups represented in 'labels'. 

@@ -1,43 +1,41 @@
-#' modificed expression calculation that enforces clean data without NAs for speeding up qusage
-#' @param Baseline               expression values before treatment
-#' @param PostTreatment          expression values after treatment
-#' @param paired                 boolean, paired reads
-#' @param min.variance.factor    numeric, variance factor for pooled variance
+#' script from Qusage, used for testing
+#' @param Baseline is the matix of gene expressions at baseline, row names are gene names
+#' @param PostTreatment is the matix of gene expressions after treatment, row names are gene names
+#' @param paired: logical, whether the data is paired or not
+#' @param min.variance.factor error numeric
+#' @param na.rm  boolean for removing na terms
 #' @export 
-calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6){
+#' @return qusage array object 
+calcIndividualExpressions<-function(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE){
   ###Baseline is the matix of gene expressions at baseline, row names are gene names
   ###PostTreatment is the matix of gene expressions after treatment, row names are gene names
   ###paired: logical, whether the data is paired or not
-#enforce no NAs  not a flexible solution
+  
   ##########Some error checks
   if(length(dim(Baseline))!=2 | length(dim(PostTreatment))!=2){stop("Input Matrices need to be matrices... \n")}
   if(nrow(Baseline)!=nrow(PostTreatment)){stop("Input Matrices need to have the same number of genes \n")}
   if(sum(!(rownames(Baseline)%in%rownames(PostTreatment)))){stop("Input Matrices need to have the same list of genes. Gene names should be the row names \n")}
   if(ncol(Baseline)<2 | ncol(PostTreatment)<2 ){stop("Input Matrices need to have at least two columns \n")}
- 
- #the design could be improved: by checking if there are any NA values and ensureing there do not exist any NA values, then we can say that the row sums of the NA values is equal to the number of columns. and do not have to check that. assuming this
- if(any(is.na(Baseline)) || any(is.na(PostTreatment)) ){
-   
- 
-}
- #########Reorder PostTreatment
-  PostTreatment<-PostTreatment[rownames(Baseline),]
 
-  ###########Paired
+  #########Reorder PostTreatment
+  PostTreatment<-PostTreatment[rownames(Baseline),]
+  
+#  if(!abs){
+    ###########Paired
     if(paired){
       if(ncol(Baseline)!=ncol(PostTreatment)){
         stop("Input Matrices need to have the same number of columns when paired flag is on \n")
       }
-  if(sum(!colnames(Baseline)%in%colnames(PostTreatment))){
+      if(sum(!colnames(Baseline)%in%colnames(PostTreatment))){
         stop("Input Matrices need to have the same list of samples when paired flag is on \n")
       }
       PostTreatment = PostTreatment[,colnames(Baseline)]
       ##########First calculate the differential expression for individual genes
-      Sums_Base<-rowSums(Baseline) #na.rm is not needed if enforced $$$
-      Sums_Post<-rowSums(PostTreatment)
-      Ns<-ncol(Baseline-PostTreatment)#the ncol will be equal to all of the remove NA
-      #if(min(Ns)!=ncol(Baseline)){warning("Some NA's in data")}
-      Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
+      Sums_Base<-rowSums(Baseline, na.rm=na.rm)
+      Sums_Post<-rowSums(PostTreatment, na.rm=na.rm)
+      Ns<-rowSums(!is.na(Baseline-PostTreatment), na.rm=na.rm)
+      if(min(Ns)!=ncol(Baseline)){warning("Some NA's in data")}
+      Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2,na.rm=na.rm)/(Ns-1)
       DOF<-Ns
       if(any(DOF<3, na.rm=T)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
       DOF[DOF<3]<-3
@@ -47,27 +45,24 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
     ###########Non Paired
     if(!paired){
       ##########First calculate the differential expression for individual genes
-      Sums_Base<-rowSums(Baseline)
-      Sums_Post<-rowSums(PostTreatment)
-      Ns_Base<-ncol(Baseline) #no NAs numeric, not vector
-      Ns_Post<-ncol(PostTreatment) #no NAs , numeric not vector
-      #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
-     
-      Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
-      Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2)/(Ns_Post-1)
+      Sums_Base<-rowSums(Baseline, na.rm=na.rm)
+      Sums_Post<-rowSums(PostTreatment, na.rm=na.rm)
+      Ns_Base<-rowSums(!is.na(Baseline), na.rm=na.rm)
+      Ns_Post<-rowSums(!is.na(PostTreatment), na.rm=na.rm)
+      if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}
+      Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2,na.rm=na.rm)/(Ns_Base-1)
+      Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2,na.rm=na.rm)/(Ns_Post-1)
       ROWS<-rownames(Baseline)
       DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns_Post,Ns_Base)
       #calculate degrees of freedom
-
-
-  if(any(DOF<3, na.rm=T)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
+      if(any(DOF<3, na.rm=T)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
       DOF[DOF<3]<-3
       Mean=(Sums_Post/Ns_Post-Sums_Base/Ns_Base)
       SD=sqrt(Sigmas_Base/Ns_Base+Sigmas_Post/Ns_Post)
     }
   sd.alpha = sqrt(SD^2+min.variance.factor)/SD
   sd.alpha[is.infinite(sd.alpha)] = 1
-
+  
   dat = newQSarray(mean=Mean,
                 SD=sqrt(SD^2+min.variance.factor),
                 sd.alpha = sd.alpha,
@@ -76,5 +71,3 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
   )
   dat
 }
-
-
