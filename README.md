@@ -23,24 +23,38 @@ contrast<-"t1-t0"
 fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
 ISG.geneSet<-read.gmt(fileISG)
 ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
+Baseline<-eset
+PostTreatment<-eset+20.4
+#non-paired
+test1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE)
+test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6)
+identical(test2,test1)
+library(microbenchmark)
+mb<-microbenchmark(
+test1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE),
+test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6))
+#on average 1.49X faster 
+mb
+#paired end testing
+testPE1<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE)
+testPE2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
+for(i in 1:length(test1)){
+message(paste0(identical(testPE1[[i]],testPE2[[i]])," ",i))
+}
 
-
-
-
-result<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6)
-results2<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6)
-identical(results1,results2)
-
-microbenchmark(
-results1<-calcIndividualExpressionsC(Baseline,PostTreatment,min.variance.factor=10^-6),
-results2<-calcIndividualExpressions(Baseline,PostTreatment,min.variance.factor=10^-6)
-)
+#this shows that the only difference is the vector of Non-NA columns per each row; which is the same as the number of columns if no-na is enforced.
+peMB<-microbenchmark(
+testPE1<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE),
+testPE2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
+) #for paired end 1.2X faster
 
 #add NAs and test
 testPT<-PostTreatment[1:20,]
 testPT<-cbind(rbind(testPT,NaN),NA)
+rownames(testPT)[nrow(testPT)]<-"NA"
 testB<-Baseline[1:20,]
 testB<-cbind(rbind(testB,NaN),NA)
+rownames(testB)[nrow(testB)]<-"NA"
 ```
 
 
