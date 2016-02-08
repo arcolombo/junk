@@ -31,4 +31,4 @@ Error in calcIndividualExpressionsC(testB, testPT) :
 ```
 
 #makeComparison changes
-
+The goal is to simplify costly functions by altering the design and control flow if possible.  The second goal is to parallel compute the gene sets, rowSums command is one of the most computation time used, so if one can create a vector of eset Baseline, and PostTreatment and issue the rowSums in parallel this would reduce the compute time.
