@@ -17,9 +17,12 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
  
  #the design could be improved: by checking if there are any NA values and ensureing there do not exist any NA values, then we can say that the row sums of the NA values is equal to the number of columns. and do not have to check that. assuming this
  if(any(is.na(Baseline)) || any(is.na(PostTreatment)) ){
-   
- 
-}
+#Baseline[which(is.na(Baseline))]<-0
+#PostTreatment[which(is.na(PostTreatment))]<-0
+ stop("NA values are present in the expression matrix, please pluck out ...")
+ }#flxbly setting to 0
+
+
  #########Reorder PostTreatment
   PostTreatment<-PostTreatment[rownames(Baseline),]
 
