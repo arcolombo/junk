@@ -101,8 +101,8 @@ mb</code></pre>
 ##  test1 &lt;- calcIndividualExpressions(Baseline, PostTreatment, paired = FALSE,      min.variance.factor = 10^-6, na.rm = TRUE)
 ##               test2 &lt;- calcIndividualExpressionsC(Baseline, PostTreatment,      paired = FALSE, min.variance.factor = 10^-6)
 ##       min       lq     mean   median       uq      max neval cld
-##  176.5508 224.7822 223.4475 226.2532 229.9082 242.5602   100   b
-##  112.5428 116.8076 142.3476 163.1434 165.7608 170.5896   100  a</code></pre>
+##  176.8136 225.1809 226.6267 227.5978 231.3627 281.2612   100   b
+##  112.0373 116.8091 147.9070 163.5218 165.8934 200.5495   100  a</code></pre>
 <pre class="r"><code>#paired end testing
 testPE1&lt;-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE)
 testPE2&lt;-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
@@ -125,8 +125,8 @@ peMB </code></pre>
 ##  testPE1 &lt;- calcIndividualExpressions(Baseline, PostTreatment,      paired = TRUE, min.variance.factor = 10^-6, na.rm = TRUE)
 ##               testPE2 &lt;- calcIndividualExpressionsC(Baseline, PostTreatment,      paired = TRUE, min.variance.factor = 10^-6)
 ##       min       lq     mean   median       uq      max neval cld
-##  151.4904 175.8198 204.5262 191.4459 229.1922 332.8214   100   b
-##  129.6539 143.8261 166.9900 155.2507 191.1199 248.1528   100  a</code></pre>
+##  150.5927 154.4086 177.4477 158.0504 204.7077 212.6132   100   b
+##  128.1998 129.7019 143.0176 133.0584 136.1889 189.9167   100  a</code></pre>
 <pre class="r"><code>#add NAs and test
 testPT&lt;-PostTreatment[1:20,]
 testPT&lt;-cbind(rbind(testPT,NaN),NA)

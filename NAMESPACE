@@ -2,5 +2,6 @@
 
 export(calcIndividualExpressions)
 export(calcIndividualExpressionsC)
+export(makeComparison)
 export(makeComparisonC)
 import(limma)

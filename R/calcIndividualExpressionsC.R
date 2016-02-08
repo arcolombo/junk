@@ -42,7 +42,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
       #if(min(Ns)!=ncol(Baseline)){warning("Some NA's in data")}
       Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
       DOF<-Ns
-      if(any(DOF<3, na.rm=T)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
+      if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
       DOF[DOF<3]<-3
       Mean=(Sums_Post-Sums_Base)/Ns
       SD=sqrt(Sigmas_Base/Ns)
