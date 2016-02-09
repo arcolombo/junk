@@ -1,0 +1,39 @@
+---
+title: "Qusage: Speeding in Parallel"
+author:  "Timothy J. Triche, Jr, Anthony R. Colombo, Harold Pimentel"
+output:
+    pdf_document:
+      toc: true
+      number_sections: true
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+#Make Comparison funciton into parallel
+this shows the parallel computation for makeComparison.R in qusage for small test data showing that the changes produce identical results that are faster.
+
+
+```{r}
+
+```{r}
+library(speedSage)
+library(qusage)
+eset<-system.file("extdata","eset.RData",package="speedSage")
+load(eset)
+labels<-c(rep("t0",134),rep("t1",134))
+contrast<-"t1-t0"
+colnames(eset)<-c(rep("t0",134),rep("t1",134))
+fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
+ISG.geneSet<-read.gmt(fileISG)
+ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
+Baseline<-eset
+PostTreatment<-eset+20.4
+pairVector<-NULL
+var.equal<-FALSE   #case 1 : false variance (no limma)
+bayesEstimation<-TRUE
+min.variance.factor<-10^-8
+paired<-FALSE
+
+
+
+
+

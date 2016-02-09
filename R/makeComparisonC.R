@@ -118,8 +118,8 @@ makeComparisonC <- function(eset,       ##a matrix of log2(expression values), w
         eset.1 = eset.1[,match(colnames(eset.2),colnames(eset.1))]
       #}
     }
-
-    results = newQSarray(c(params, calcIndividualExpressionsC(eset.2,eset.1,paired=paired,min.variance.factor=min.variance.factor)))
+ #    results2 = newQSarray(c(params, calcIndividualExpressions(eset.2,eset.1,paired=paired,min.variance.factor=min.variance.factor)))
+     results = newQSarray(c(params, calcIndividualExpressionsC(eset.2,eset.1,paired=paired,min.variance.factor=min.variance.factor)))
   }
   return(results)
 }

@@ -27,6 +27,7 @@ eset<-system.file("extdata","eset.RData",package="speedSage")
 load(eset)
 labels<-c(rep("t0",134),rep("t1",134))
 contrast<-"t1-t0"
+colnames(eset)<-c(rep("t0",134),rep("t1",134))
 fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
 ISG.geneSet<-read.gmt(fileISG)
 ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
@@ -77,4 +78,4 @@ rownames(testB)[nrow(testB)]<-"NA"
 #calcIndividualExpressionsC(testB,testPT)) will produce error and stop if NA
 ```
 
-
+#Issue with smaller sets
