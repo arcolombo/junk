@@ -72,8 +72,13 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
       Ns<-mclapply(Ns,function(x) ncol(x),mc.cores=no.cores)
       names(Ns)<-c("Ns_Base","Ns_Post")
       #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
-       sb_inner<-(Baseline-(sumsList$Sums_Base)/Ns$Ns_Base)^2
-       sp_inner<-(PostTreatment-(sumsList$Sums_Post)/Ns$Ns_Post)^2
+        inner<-function(x,y,z){
+         outputs<-(x-y/z)^2
+         return(outputs)
+       }
+#FIX ME: slow for eset.1 eset.2 
+       sb_inner<-inner(Baseline,sumsList$Sums_Base,Ns$Ns_Base)
+       sp_inner<-inner(PostTreatment,sumsList$Sums_Post,Ns$Ns_Post)
        sigmas<-list(sb_inner,sp_inner)
        results<-mclapply(sigmas,function(x) rowSums(x),mc.cores=no.cores)
        names(results)<-c("Sigmas_Base","Sigmas_Post")
@@ -86,7 +91,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
       #calculate degrees of freedom
 
 
-  if(any(DOF<3, na.rm=T)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
+  if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
       DOF[DOF<3]<-3
       Mean=(sumsList$Sums_Post/Ns$Ns_Post-sumsList$Sums_Base/Ns$Ns_Base)
       SD=sqrt(Sigmas_Base/Ns$Ns_Base+Sigmas_Post/Ns$Ns_Post)
