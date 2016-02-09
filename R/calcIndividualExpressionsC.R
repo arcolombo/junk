@@ -45,7 +45,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
      sumsList<-list(Baseline,PostTreatment)
      names(sumsList)<-c("Sums_Base","Sums_Post") 
      #no_cores<-max(1,detectCores()-1)
-     sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no_cores)
+     sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no.cores)
 
      #Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
      # Sigmas_Base<-rowSums((Baseline-PostTreatment-(sumsList$Sums_Base-sumsList$Sums_Post)/Ns)^2)/(Ns-1) 
@@ -67,15 +67,15 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
       sumsList<-list(Baseline,PostTreatment)
       names(sumsList)<-c("Sums_Base","Sums_Post")
      # no_cores<-max(1,detectCores()-1)
-      sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no_cores)
+      sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no.cores)
       Ns<-list(Baseline,PostTreatment)
-      Ns<-mclapply(Ns,function(x) ncol(x),mc.cores=no_cores)
+      Ns<-mclapply(Ns,function(x) ncol(x),mc.cores=no.cores)
       names(Ns)<-c("Ns_Base","Ns_Post")
       #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
        sb_inner<-(Baseline-(sumsList$Sums_Base)/Ns$Ns_Base)^2
        sp_inner<-(PostTreatment-(sumsList$Sums_Post)/Ns$Ns_Post)^2
        sigmas<-list(sb_inner,sp_inner)
-       results<-mclapply(sigmas,function(x) rowSums(x),mc.cores=no_cores)
+       results<-mclapply(sigmas,function(x) rowSums(x),mc.cores=no.cores)
        names(results)<-c("Sigmas_Base","Sigmas_Post")
        Sigmas_Base<-results$Sigmas_Base/(Ns$Ns_Base-1)
      # Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
