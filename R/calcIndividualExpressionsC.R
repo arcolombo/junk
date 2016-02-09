@@ -36,37 +36,58 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
       }
       PostTreatment = PostTreatment[,colnames(Baseline)]
       ##########First calculate the differential expression for individual genes
-      Sums_Base<-rowSums(Baseline) #na.rm is not needed if enforced $$$
-      Sums_Post<-rowSums(PostTreatment)
+#      Sums_Base<-rowSums(Baseline) #na.rm is not needed if enforced $$$
+ #     Sums_Post<-rowSums(PostTreatment)
       Ns<-ncol(Baseline-PostTreatment)#the ncol will be equal to all of the remove NA
-      #if(min(Ns)!=ncol(Baseline)){warning("Some NA's in data")}
-      Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
+      #if(min(Ns)!=ncol(Baseline)){warning("Some NA's in data")} ignore by assumption
+     sumsList<-list(Baseline,PostTreatment)
+     names(sumsList)<-c("Sums_Base","Sums_Post") 
+     no_cores<-max(1,detectCores()-1)
+     sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no_cores)
+
+     #Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
+     # Sigmas_Base<-rowSums((Baseline-PostTreatment-(sumsList$Sums_Base-sumsList$Sums_Post)/Ns)^2)/(Ns-1) 
+    #vector function to speed up Sigmas_Base  
+   Sigmas_Base<-rowSums((Baseline-PostTreatment-(sumsList$Sums_Base-sumsList$Sums_Post)/Ns)^2)/(Ns-1) 
       DOF<-Ns
       if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
       DOF[DOF<3]<-3
-      Mean=(Sums_Post-Sums_Base)/Ns
+      Mean=(sumsList$Sums_Post-sumsList$Sums_Base)/Ns
       SD=sqrt(Sigmas_Base/Ns)
     }
     ###########Non Paired
     if(!paired){
       ##########First calculate the differential expression for individual genes
-      Sums_Base<-rowSums(Baseline)
-      Sums_Post<-rowSums(PostTreatment)
-      Ns_Base<-ncol(Baseline) #no NAs numeric, not vector
-      Ns_Post<-ncol(PostTreatment) #no NAs , numeric not vector
+     # Sums_Base<-rowSums(Baseline)
+     # Sums_Post<-rowSums(PostTreatment)
+     # Ns_Base<-ncol(Baseline) #no NAs numeric, not vector
+     # Ns_Post<-ncol(PostTreatment) #no NAs , numeric not vector
+      sumsList<-list(Baseline,PostTreatment)
+      names(sumsList)<-c("Sums_Base","Sums_Post")
+      no_cores<-max(1,detectCores()-1)
+      sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no_cores)
+      Ns<-list(Baseline,PostTreatment)
+      Ns<-mclapply(Ns,function(x) ncol(x),mc.cores=no_cores)
+      names(Ns)<-c("Ns_Base","Ns_Post")
       #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
-     
-      Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
-      Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2)/(Ns_Post-1)
+       sb_inner<-(Baseline-(sumsList$Sums_Base)/Ns$Ns_Base)^2
+       sp_inner<-(PostTreatment-(sumsList$Sums_Post)/Ns$Ns_Post)^2
+       sigmas<-list(sb_inner,sp_inner)
+       results<-mclapply(sigmas,function(x) rowSums(x),mc.cores=no_cores)
+       names(results)<-c("Sigmas_Base","Sigmas_Post")
+       Sigmas_Base<-results$Sigmas_Base/(Ns$Ns_Base-1)
+     # Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
+       Sigmas_Post<-results$Sigmas_Post/(Ns$Ns_Post-1)
+      #Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2)/(Ns_Post-1)
       ROWS<-rownames(Baseline)
-      DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns_Post,Ns_Base)
+      DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns$Ns_Post,Ns$Ns_Base)
       #calculate degrees of freedom
 
 
   if(any(DOF<3, na.rm=T)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
       DOF[DOF<3]<-3
-      Mean=(Sums_Post/Ns_Post-Sums_Base/Ns_Base)
-      SD=sqrt(Sigmas_Base/Ns_Base+Sigmas_Post/Ns_Post)
+      Mean=(sumsList$Sums_Post/Ns$Ns_Post-sumsList$Sums_Base/Ns$Ns_Base)
+      SD=sqrt(Sigmas_Base/Ns$Ns_Base+Sigmas_Post/Ns$Ns_Post)
     }
   sd.alpha = sqrt(SD^2+min.variance.factor)/SD
   sd.alpha[is.infinite(sd.alpha)] = 1
