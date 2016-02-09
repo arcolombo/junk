@@ -5,7 +5,7 @@
 \title{modificed expression calculation that enforces clean data without NAs for speeding up qusage}
 \usage{
 calcIndividualExpressionsC(Baseline, PostTreatment, paired = FALSE,
-  min.variance.factor = 10^-6)
+  min.variance.factor = 10^-6, no.cores = 3)
 }
 \arguments{
 \item{Baseline}{expression values before treatment}
@@ -15,6 +15,8 @@ calcIndividualExpressionsC(Baseline, PostTreatment, paired = FALSE,
 \item{paired}{boolean, paired reads}
 
 \item{min.variance.factor}{numeric, variance factor for pooled variance}
+
+\item{no.cores}{integer, number of cores used in parallel}
 }
 \description{
 modificed expression calculation that enforces clean data without NAs for speeding up qusage

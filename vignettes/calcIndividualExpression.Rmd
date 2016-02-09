@@ -1,3 +1,13 @@
+---
+title: "Qusage: Speeding in Parallel"
+author:  "Timothy J. Triche, Jr, Anthony R. Colombo, Harold Pimentel"
+output: 
+    pdf_document:
+      toc: true
+      number_sections: true
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
 #SpeedSage Intro
 qusage is published software that is slow for large runs, SpeedSage corrects for speed and efficiency at large orders
 #Bottlenecking of Functions
@@ -32,12 +42,24 @@ test1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.varianc
 test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6))
 #on average 1.49X faster 
 mb
+require(profr)
+require(ggplot2)
+x1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE))
+ggplot(x1)+labs(title="Qusage SE Default")
+x2<-profr(calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6))
+ggplot(x2)+labs(title="Qusage SE Parallel")
 #paired end testing
 testPE1<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE)
 testPE2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
 for(i in 1:length(test1)){
 message(paste0(identical(testPE1[[i]],testPE2[[i]])," ",i))
 }
+require(profr)
+require(ggplot2)
+y1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE))
+y2<-profr(calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6))
+ggplot(y1)+labs(title="Qusage PE Default")
+ggplot(y2)+labs(title="Qusage PE Parallel")
 
 #this shows that the only difference is the vector of Non-NA columns per each row; which is the same as the number of columns if no-na is enforced.
 peMB<-microbenchmark(

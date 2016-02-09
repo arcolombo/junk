@@ -3,8 +3,10 @@
 #' @param PostTreatment          expression values after treatment
 #' @param paired                 boolean, paired reads
 #' @param min.variance.factor    numeric, variance factor for pooled variance
+#' @param no.cores               integer, number of cores used in parallel
+#' @import parallel
 #' @export 
-calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6){
+calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,no.cores=3){
   ###Baseline is the matix of gene expressions at baseline, row names are gene names
   ###PostTreatment is the matix of gene expressions after treatment, row names are gene names
   ###paired: logical, whether the data is paired or not
@@ -42,7 +44,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
       #if(min(Ns)!=ncol(Baseline)){warning("Some NA's in data")} ignore by assumption
      sumsList<-list(Baseline,PostTreatment)
      names(sumsList)<-c("Sums_Base","Sums_Post") 
-     no_cores<-max(1,detectCores()-1)
+     #no_cores<-max(1,detectCores()-1)
      sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no_cores)
 
      #Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
@@ -64,7 +66,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
      # Ns_Post<-ncol(PostTreatment) #no NAs , numeric not vector
       sumsList<-list(Baseline,PostTreatment)
       names(sumsList)<-c("Sums_Base","Sums_Post")
-      no_cores<-max(1,detectCores()-1)
+     # no_cores<-max(1,detectCores()-1)
       sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no_cores)
       Ns<-list(Baseline,PostTreatment)
       Ns<-mclapply(Ns,function(x) ncol(x),mc.cores=no_cores)
