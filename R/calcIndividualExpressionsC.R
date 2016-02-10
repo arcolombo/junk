@@ -19,10 +19,8 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
  
  #the design could be improved: by checking if there are any NA values and ensureing there do not exist any NA values, then we can say that the row sums of the NA values is equal to the number of columns. and do not have to check that. assuming this
  if(any(is.na(Baseline)) || any(is.na(PostTreatment)) ){
-#Baseline[which(is.na(Baseline))]<-0
-#PostTreatment[which(is.na(PostTreatment))]<-0
  stop("NA values are present in the expression matrix, please pluck out ...")
- }#flxbly setting to 0
+ }
 
 
  #########Reorder PostTreatment
@@ -45,12 +43,13 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
      sumsList<-list(Baseline,PostTreatment)
      names(sumsList)<-c("Sums_Base","Sums_Post") 
      #no_cores<-max(1,detectCores()-1)
-     sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no.cores)
+     out<-lapply(sumsList,function(x) rowSums(x))
 
-     #Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
-     # Sigmas_Base<-rowSums((Baseline-PostTreatment-(sumsList$Sums_Base-sumsList$Sums_Post)/Ns)^2)/(Ns-1) 
-    #vector function to speed up Sigmas_Base  
-   Sigmas_Base<-rowSums((Baseline-PostTreatment-(sumsList$Sums_Base-sumsList$Sums_Post)/Ns)^2)/(Ns-1) 
+     
+    Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
+    Sigmas_Base<-rowSums((Baseline-PostTreatment-(sumsList$Sums_Base-sumsList$Sums_Post)/Ns)^2)/(Ns-1) 
+   
+ 
       DOF<-Ns
       if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
       DOF[DOF<3]<-3
