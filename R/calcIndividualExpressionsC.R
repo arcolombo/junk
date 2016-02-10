@@ -66,21 +66,52 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
      # Ns_Post<-ncol(PostTreatment) #no NAs , numeric not vector
       sumsList<-list(Baseline,PostTreatment)
       names(sumsList)<-c("Sums_Base","Sums_Post")
-     # no_cores<-max(1,detectCores()-1)
-      sumsList<-mclapply(sumsList,function(x) rowSums(x),mc.cores=no.cores)
+    
+      sumsList<-lapply(sumsList,function(x) rowSums(x))
       Ns<-list(Baseline,PostTreatment)
-      Ns<-mclapply(Ns,function(x) ncol(x),mc.cores=no.cores)
+      Ns<-lapply(Ns,function(x) ncol(x))
       names(Ns)<-c("Ns_Base","Ns_Post")
       #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
-        inner<-function(x,y,z){
-         outputs<-(x-y/z)^2
-         return(outputs)
+#        inner<-function(x,y,z){
+ #        outputs<-(x-y/z)^2
+  #       return(outputs)
+#       }
+
+   cppFunction('NumericVector sigmasC(NumericMatrix x, NumericVector y, double z){
+      int nrow = x.nrow(), ncol = x.ncol();
+      NumericVector out(nrow);
+      
+      for (int i = 0; i < nrow; i++){
+      double total = 0;
+          for(int j = 0; j < ncol; j++){
+           total+=pow((x(i,j)-(y(i))/z),2.0);
        }
+               out[i] = total;
+  
+     }
+       return out;
+   }')
+
+
+cppFunction('double parallelVectorSum(NumericVector x) {
+   
+   // declare the SumBody instance 
+   Sum sum(x);
+   
+   // call parallel_reduce to start the work
+   parallelReduce(0, x.length(), sum);
+   
+   // return the computed sum
+   return sum.value;
+}')
+
+
+
 #FIX ME: slow for eset.1 eset.2 
        sb_inner<-inner(Baseline,sumsList$Sums_Base,Ns$Ns_Base)
        sp_inner<-inner(PostTreatment,sumsList$Sums_Post,Ns$Ns_Post)
        sigmas<-list(sb_inner,sp_inner)
-       results<-mclapply(sigmas,function(x) rowSums(x),mc.cores=no.cores)
+       results<-lapply(sigmas,function(x) rowSums(x))
        names(results)<-c("Sigmas_Base","Sigmas_Post")
        Sigmas_Base<-results$Sigmas_Base/(Ns$Ns_Base-1)
      # Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)

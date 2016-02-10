@@ -21,6 +21,7 @@ This test the local version which enforces no NA in Baseline or PostTreatment ob
 
 
 ```{r} 
+library(parallel)
 library(speedSage)
 library(qusage)
 eset<-system.file("extdata","eset.RData",package="speedSage")
@@ -79,3 +80,12 @@ rownames(testB)[nrow(testB)]<-"NA"
 ```
 
 #Issue with smaller sets
+there is an issue when calling makeComparisons on eset.1 and eset.2 test object, the mclapply is dispatching twice which causes slowness, also I wish to compile R computations for certain functions to speed up before run-time
+
+```{r}
+eset.1<-system.file("extdata","eset.1.RData",package="speedSage")
+eset.2<-system.file("extdata","eset.2.RData",package="speedSage")
+load(eset.1)
+load(eset.2)
+```
+
