@@ -1,5 +1,5 @@
 ---
-title: "Qusage: Speeding in Parallel"
+title: "Qusage: Speeding up in Rcpp"
 author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
 output: 
     pdf_document:
@@ -17,8 +17,7 @@ Qusage can improve the speed of its algorithm by minimizing the cost of computai
 trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up calcIndividualExpressionsC 2X
 
 #Individual Expression Function
-This test the local version which enforces no NA in Baseline or PostTreatment object, this reduces the flexibility.
-
+This test the local version which enforces no NA in Baseline or PostTreatment object, this reduces the flexibility. this test data is from the vignette where postTreatment was modified to be Baseline+40, a simple training set.
 
 ```{r} 
 library(Rcpp)
@@ -39,12 +38,11 @@ PostTreatment<-eset+20.4
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
 test1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE)
 test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6)
-identical(test2,test1)
+summary(abs(test2$mean-test1$mean)) #machine error precision
 library(microbenchmark)
 mb<-microbenchmark(
 test1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE),
 test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6))
-#on average 1.49X faster 
 mb
 require(profr)
 require(ggplot2)
@@ -58,6 +56,7 @@ testPE2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.varia
 for(i in 1:length(test1)){
 message(paste0(identical(testPE1[[i]],testPE2[[i]])," ",i))
 }
+summary(abs(testPE1$mean-testPE2$mean))
 require(profr)
 require(ggplot2)
 y1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE))
@@ -82,9 +81,9 @@ rownames(testB)[nrow(testB)]<-"NA"
 ```
 
 #Issue with smaller sets
-there is an issue when calling makeComparisons on eset.1 and eset.2 test object, the mclapply is dispatching twice which causes slowness, also I wish to compile R computations for certain functions to speed up before run-time
+there is an issue when calling makeComparisons on eset.1 and eset.2 test object, the mclapply is dispatching twice which causes slowness, also I wish to compile R computations for certain functions to speed up before run-time.  This eset was then created from makeCompairson funciton which compares two different labels after splitting the eset by column names label type.  
 
-#Paired revised
+#Paired end revised demo set , not split by label
 ```{r}
 library(Rcpp)
 library(parallel)
@@ -124,8 +123,12 @@ ggplot(tt)+ labs(title="Qusage PE in Cpp")
 
 
 
-#for non-paired end the eset.1, eset.2 is split
+# Non-paired end the eset.1, eset.2 split by label
+  This simulates how makeComparison will compare a split eset with label split
 ```{r}
+library(microbenchmark)
+library(profr)
+library(ggplot2)
 library(Rcpp)
 eset.1<-system.file("extdata","eset.1.RData",package="speedSage")
 eset.2<-system.file("extdata","eset.2.RData",package="speedSage")
@@ -133,8 +136,24 @@ load(eset.1)
 load(eset.2)
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
 
-original<-calcIndividualExpressions(eset.1,eset.2)
-cpp<-calcIndividualExpressionsC(eset.1,eset.2)
+original<-calcIndividualExpressions(eset.1,eset.2,paired=FALSE)
+cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE)
+summary(abs(original$mean-cpp$mean))
+summary(abs(original$SD-cpp$SD))
+summary(abs(original$dof-cpp$dof))
+
+microbenchmark(
+ original<-calcIndividualExpressions(eset.1,eset.2,paired=FALSE),
+ cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE))
+
+
+x<-profr(calcIndividualExpressions(eset.1,eset.2,paired=FALSE))
+y<-profr(calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE))
+ggplot(x) + labs(title="Qusage SE Default Test 2")
+ggplot(y) + labs(title="Qusage SE Default Test 2")
+
 
 ```
+
+
 
