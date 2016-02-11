@@ -60,8 +60,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
      # Ns_Post<-ncol(PostTreatment) #no NAs , numeric not vector
       sumsList<-list(Baseline,PostTreatment)
       names(sumsList)<-c("Sums_Base","Sums_Post")
-    
-      sumsList<-lapply(sumsList,function(x) rowSums(x))
+      out<-lapply(sumsList,function(x) rowSums(x))
       Ns<-list(Baseline,PostTreatment)
       Ns<-lapply(Ns,function(x) ncol(x))
       names(Ns)<-c("Ns_Base","Ns_Post")
@@ -69,13 +68,11 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
 
    
 
-#FIX ME: slow for eset.1 eset.2 
-     
-       results<-lapply(sigmas,function(x) rowSums(x))
-       names(results)<-c("Sigmas_Base","Sigmas_Post")
-       Sigmas_Base<-results$Sigmas_Base/(Ns$Ns_Base-1)
-     # Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
-       Sigmas_Post<-results$Sigmas_Post/(Ns$Ns_Post-1)
+#FIX ME: slow for eset.1 eset.2  
+       Sigmas_Base<-sigmasCpp(Baseline,out$Sums_Base/Ns$Ns_Base,Ns$Ns_Base)
+       Sigmas_Post<-sigmasCpp(PostTreatment,out$Sums_Post/Ns$Ns_Post,Ns$Ns_Post)
+
+     #Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
       #Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2)/(Ns_Post-1)
       ROWS<-rownames(Baseline)
       DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns$Ns_Post,Ns$Ns_Base)
