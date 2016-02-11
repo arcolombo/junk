@@ -72,7 +72,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
        Sigmas_Base<-sigmasCpp(Baseline,out$Sums_Base/Ns$Ns_Base,Ns$Ns_Base)
        Sigmas_Post<-sigmasCpp(PostTreatment,out$Sums_Post/Ns$Ns_Post,Ns$Ns_Post)
 
-     #Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
+     #Sigmas_Base<-rowSums((Baseline-(out$Sums_Base)/Ns$Ns_Base)^2)/(Ns$Ns_Base-1)
       #Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2)/(Ns_Post-1)
       ROWS<-rownames(Baseline)
       DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns$Ns_Post,Ns$Ns_Base)
@@ -81,7 +81,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
 
   if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
       DOF[DOF<3]<-3
-      Mean=(sumsList$Sums_Post/Ns$Ns_Post-sumsList$Sums_Base/Ns$Ns_Base)
+      Mean=(outList$Sums_Post/Ns$Ns_Post-outList$Sums_Base/Ns$Ns_Base)
       SD=sqrt(Sigmas_Base/Ns$Ns_Base+Sigmas_Post/Ns$Ns_Post)
     }
   sd.alpha = sqrt(SD^2+min.variance.factor)/SD
