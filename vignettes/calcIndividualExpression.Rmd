@@ -1,6 +1,6 @@
 ---
 title: "Qusage: Speeding in Parallel"
-author:  "Timothy J. Triche, Jr, Anthony R. Colombo, Harold Pimentel"
+author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
 output: 
     pdf_document:
       toc: true
@@ -21,6 +21,7 @@ This test the local version which enforces no NA in Baseline or PostTreatment ob
 
 
 ```{r} 
+library(Rcpp)
 library(parallel)
 library(speedSage)
 library(qusage)
@@ -35,6 +36,7 @@ ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
 Baseline<-eset
 PostTreatment<-eset+20.4
 #non-paired
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
 test1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE)
 test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,no.cores=3)
 identical(test2,test1)
@@ -82,10 +84,57 @@ rownames(testB)[nrow(testB)]<-"NA"
 #Issue with smaller sets
 there is an issue when calling makeComparisons on eset.1 and eset.2 test object, the mclapply is dispatching twice which causes slowness, also I wish to compile R computations for certain functions to speed up before run-time
 
+#Paired revised
 ```{r}
+library(Rcpp)
+library(parallel)
+library(speedSage)
+library(qusage)
+eset<-system.file("extdata","eset.RData",package="speedSage")
+load(eset)
+labels<-c(rep("t0",134),rep("t1",134))
+contrast<-"t1-t0"
+colnames(eset)<-c(rep("t0",134),rep("t1",134))
+fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
+ISG.geneSet<-read.gmt(fileISG)
+ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
+eset.1<-eset-40.3
+eset.2<-eset+100.5
+original<-calcIndividualExpressions(eset.1,eset.2,paired=TRUE)
+cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE)
+summary(abs(original$mean-cpp$mean)) #identical results   
+
+microbenchmark(
+ original<-calcIndividualExpressions(eset.1,eset.2,paired=TRUE),
+ cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE))
+
+#showing profiles
+library(profr)
+library(ggplot2)
+
+yy<-profr(calcIndividualExpressions(eset.1,eset.2,paired=TRUE))
+ggplot(yy) + labs(title="Qusage PE Default")
+tt<-profr(calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE))
+ggplot(tt)+ labs(title="Qusage PE in Cpp")
+
+```
+
+
+
+
+
+#for non-paired end the eset.1, eset.2 is split
+```{r}
+library(Rcpp)
 eset.1<-system.file("extdata","eset.1.RData",package="speedSage")
 eset.2<-system.file("extdata","eset.2.RData",package="speedSage")
 load(eset.1)
 load(eset.2)
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
+
+original<-calcIndividualExpressions(eset.1,eset.2)
+cpp<-calcIndividualExpressionsC(eset.1,eset.2)
+
 ```
 

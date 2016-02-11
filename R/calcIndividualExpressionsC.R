@@ -3,10 +3,9 @@
 #' @param PostTreatment          expression values after treatment
 #' @param paired                 boolean, paired reads
 #' @param min.variance.factor    numeric, variance factor for pooled variance
-#' @param no.cores               integer, number of cores used in parallel
 #' @import parallel
 #' @export 
-calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,no.cores=3){
+calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6){
   ###Baseline is the matix of gene expressions at baseline, row names are gene names
   ###PostTreatment is the matix of gene expressions after treatment, row names are gene names
   ###paired: logical, whether the data is paired or not
@@ -44,16 +43,12 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
      names(sumsList)<-c("Sums_Base","Sums_Post") 
      #no_cores<-max(1,detectCores()-1)
      out<-lapply(sumsList,function(x) rowSums(x))
-
-     
-    Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
-    Sigmas_Base<-rowSums((Baseline-PostTreatment-(sumsList$Sums_Base-sumsList$Sums_Post)/Ns)^2)/(Ns-1) 
-   
- 
+     Sigmas_Base<-sigmasCpp(Baseline-PostTreatment,(out$Sums_Base-out$Sums_Post)/Ns,Ns)
+  #  Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
       DOF<-Ns
       if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
       DOF[DOF<3]<-3
-      Mean=(sumsList$Sums_Post-sumsList$Sums_Base)/Ns
+      Mean=(out$Sums_Post-out$Sums_Base)/Ns
       SD=sqrt(Sigmas_Base/Ns)
     }
     ###########Non Paired
@@ -71,45 +66,11 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
       Ns<-lapply(Ns,function(x) ncol(x))
       names(Ns)<-c("Ns_Base","Ns_Post")
       #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
-#        inner<-function(x,y,z){
- #        outputs<-(x-y/z)^2
-  #       return(outputs)
-#       }
 
-   cppFunction('NumericVector sigmasC(NumericMatrix x, NumericVector y, double z){
-      int nrow = x.nrow(), ncol = x.ncol();
-      NumericVector out(nrow);
-      
-      for (int i = 0; i < nrow; i++){
-      double total = 0;
-          for(int j = 0; j < ncol; j++){
-           total+=pow((x(i,j)-(y(i))/z),2.0);
-       }
-               out[i] = total;
-  
-     }
-       return out;
-   }')
-
-
-cppFunction('double parallelVectorSum(NumericVector x) {
    
-   // declare the SumBody instance 
-   Sum sum(x);
-   
-   // call parallel_reduce to start the work
-   parallelReduce(0, x.length(), sum);
-   
-   // return the computed sum
-   return sum.value;
-}')
-
-
 
 #FIX ME: slow for eset.1 eset.2 
-       sb_inner<-inner(Baseline,sumsList$Sums_Base,Ns$Ns_Base)
-       sp_inner<-inner(PostTreatment,sumsList$Sums_Post,Ns$Ns_Post)
-       sigmas<-list(sb_inner,sp_inner)
+     
        results<-lapply(sigmas,function(x) rowSums(x))
        names(results)<-c("Sigmas_Base","Sigmas_Post")
        Sigmas_Base<-results$Sigmas_Base/(Ns$Ns_Base-1)
