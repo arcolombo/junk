@@ -81,7 +81,7 @@ calcIndividualExpressionsC<-function(Baseline,PostTreatment,paired=FALSE,min.var
 
   if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
       DOF[DOF<3]<-3
-      Mean=(outList$Sums_Post/Ns$Ns_Post-outList$Sums_Base/Ns$Ns_Base)
+      Mean=(out$Sums_Post/Ns$Ns_Post-out$Sums_Base/Ns$Ns_Base)
       SD=sqrt(Sigmas_Base/Ns$Ns_Base+Sigmas_Post/Ns$Ns_Post)
     }
   sd.alpha = sqrt(SD^2+min.variance.factor)/SD
