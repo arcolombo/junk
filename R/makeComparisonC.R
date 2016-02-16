@@ -59,7 +59,8 @@ makeComparisonC <- function(eset,       ##a matrix of log2(expression values), w
     ## Fit the linear model with the given deign matrix
     ## 'fit' contains info on each coefficient (i.e. column of design matrix) in the model.
     fit <- lmFit(eset, design=design)
-
+    #FIX ME :  USE ARMADILLO TO COMPETE WITH LIMMA 
+  
     ##Contrast the coefficients against each other to get a direct comparison.
     contrast.matrix <- makeContrasts( contrasts=contrast, levels=design)
     fit2 <- contrasts.fit(fit,contrast.matrix)
