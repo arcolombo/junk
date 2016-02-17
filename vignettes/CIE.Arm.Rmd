@@ -37,7 +37,7 @@ ISG.geneSet<-read.gmt(fileISG)
 ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
 Baseline<-eset
 PostTreatment<-eset+20.4
-#non-paired
+#paired
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
 test1<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
@@ -45,7 +45,8 @@ test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.varianc
 test3<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE)
 qplot(abs(test1[[1]]-test3[[1]]))
 qplot(abs(test1[[2]]-test3[[2]]))
-qplot(abs(test1[[3]]-test3[[3]])
+qplot(abs(test1[[3]]-test3[[3]]))
+qplot(abs(test1[[4]]-test3[[4]]))
 
 mb<-microbenchmark(
 test1<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6),
@@ -55,7 +56,7 @@ mb
 
 require(profr)
 require(ggplot2)
-x1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE))
+x1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE))
 ggplot(x1)+labs(title="Qusage SE Default")
 x2<-profr(calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6))
 ggplot(x2)+labs(title="Qusage SE Armadillo")
@@ -63,25 +64,36 @@ ggplot(x2)+labs(title="Qusage SE Armadillo")
 
 
 #single end testing
-testSE1<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE)
-testSE2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
-for(i in 1:length(test1)){
-message(paste0(identical(testPE1[[i]],testPE2[[i]])," ",i))
-}
-summary(abs(testPE1$mean-testPE2$mean))
+sourceCpp("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaSingle.cpp")
+testSE1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE)
+testSE2<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6)
+testSE3<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6)
+
+
+e1<-(abs(testSE1[[1]]-testSE2[[1]]))
+e2<-(abs(testSE1[[2]]-testSE2[[2]]))
+e3<-(abs(testSE1[[3]]-testSE2[[3]]))
+e4<-(abs(testSE1[[4]]-testSE2[[4]]))
+qplot(as.vector(e1))
+qplot(as.vector(e2))
+qplot(as.vector(e3))
+qplot(as.vector(e4))
+
+
+
 require(profr)
 require(ggplot2)
-y1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE))
-y2<-profr(calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6))
-ggplot(y1)+labs(title="Qusage PE Default")
-ggplot(y2)+labs(title="Qusage PE Parallel")
+y1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE))
+y2<-profr(calcIndividualExpressionsArm(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6))
+ggplot(y1)+labs(title="Qusage SE Default")
+ggplot(y2)+labs(title="Qusage SE Arm")
 
 #this shows that the only difference is the vector of Non-NA columns per each row; which is the same as the number of columns if no-na is enforced.
-peMB<-microbenchmark(
-testPE1<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE),
-testPE2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
-) #for paired end 1.2X faster
-peMB 
+seMB<-microbenchmark(
+testSE1<-calcIndividualExpressions(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6,na.rm=TRUE),
+testSE2<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6)
+) 
+seMB 
 #add NAs and test
 testPT<-PostTreatment[1:20,]
 testPT<-cbind(rbind(testPT,NaN),NA)
@@ -92,7 +104,7 @@ rownames(testB)[nrow(testB)]<-"NA"
 #calcIndividualExpressionsC(testB,testPT)) will produce error and stop if NA
 ```
 
-#Issue with smaller sets
+#Alternate training sets
 there is an issue when calling makeComparisons on eset.1 and eset.2 test object, the mclapply is dispatching twice which causes slowness, also I wish to compile R computations for certain functions to speed up before run-time.  This eset was then created from makeCompairson funciton which compares two different labels after splitting the eset by column names label type.  
 
 #Paired end revised demo set , not split by label
@@ -110,15 +122,30 @@ fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
 ISG.geneSet<-read.gmt(fileISG)
 ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaSingle.cpp")
+
 eset.1<-eset-40.3
 eset.2<-eset+100.5
 original<-calcIndividualExpressions(eset.1,eset.2,paired=TRUE)
 cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE)
-summary(abs(original$mean-cpp$mean)) #identical results   
+arm<-calcIndividualExpressionsArm(eset.1,eset.2,paired=TRUE)
+
+e1<-(abs(original[[1]]-arm[[1]]))
+e2<-(abs(original[[2]]-arm[[2]]))
+e3<-(abs(original[[3]]-arm[[3]]))
+e4<-(abs(original[[4]]-arm[[4]]))
+qplot(as.vector(e1))
+qplot(as.vector(e2))
+qplot(as.vector(e3))
+qplot(as.vector(e4))
+
 
 microbenchmark(
  original<-calcIndividualExpressions(eset.1,eset.2,paired=TRUE),
- cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE))
+ cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE),
+ arm<-calcIndividualExpressionsArm(eset.1,eset.2,paired=TRUE))
+
 
 #showing profiles
 library(profr)
@@ -126,8 +153,8 @@ library(ggplot2)
 
 yy<-profr(calcIndividualExpressions(eset.1,eset.2,paired=TRUE))
 ggplot(yy) + labs(title="Qusage PE Default")
-tt<-profr(calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE))
-ggplot(tt)+ labs(title="Qusage PE in Cpp")
+tt<-profr(calcIndividualExpressionsArm(eset.1,eset.2,paired=TRUE))
+ggplot(tt)+ labs(title="Qusage PE in Arm")
 
 ```
 
@@ -147,22 +174,31 @@ eset.2<-system.file("extdata","eset.2.RData",package="speedSage")
 load(eset.1)
 load(eset.2)
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
-
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
 original<-calcIndividualExpressions(eset.1,eset.2,paired=FALSE)
 cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE)
-summary(abs(original$mean-cpp$mean))
-summary(abs(original$SD-cpp$SD))
-summary(abs(original$dof-cpp$dof))
+arm<-calcIndividualExpressionsArm(eset.1,eset.2,paired=FALSE)
+e1<-(abs(original[[1]]-arm[[1]]))
+e2<-(abs(original[[2]]-arm[[2]]))
+e3<-(abs(original[[3]]-arm[[3]]))
+e4<-(abs(original[[4]]-arm[[4]]))
+qplot(as.vector(e1))
+qplot(as.vector(e2))
+qplot(as.vector(e3))
+qplot(as.vector(e4))
+
+
 
 microbenchmark(
  original<-calcIndividualExpressions(eset.1,eset.2,paired=FALSE),
- cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE))
+ cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE),
+ arm<-calcIndividualExpressionsArm(eset.1,eset.2,paired=FALSE))
 
 
 x<-profr(calcIndividualExpressions(eset.1,eset.2,paired=FALSE))
-y<-profr(calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE))
+y<-profr(calcIndividualExpressionsArm(eset.1,eset.2,paired=FALSE))
 ggplot(x) + labs(title="Qusage SE Default Test 2")
-ggplot(y) + labs(title="Qusage SE Default Test 2")
+ggplot(y) + labs(title="Qusage SE Armadillo Test 2")
 
 
 ```
