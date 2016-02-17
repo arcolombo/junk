@@ -76,41 +76,42 @@ calcIndividualExpressionsArm<-function(Baseline,PostTreatment,paired=FALSE,min.v
      # Sums_Post<-rowSums(PostTreatment)
      # Ns_Base<-ncol(Baseline) #no NAs numeric, not vector
      # Ns_Post<-ncol(PostTreatment) #no NAs , numeric not vector
-      sumsList<-list(Baseline,PostTreatment)
-      names(sumsList)<-c("Sums_Base","Sums_Post")
-      out<-lapply(sumsList,function(x) rowSums(x))
-      Ns<-list(Baseline,PostTreatment)
-      Ns<-lapply(Ns,function(x) ncol(x))
-      names(Ns)<-c("Ns_Base","Ns_Post")
-      #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
-
-   
-
+       qsList<-sigmaSingle(Baseline,PostTreatment,min.variance.factor)
+    qv<-lapply(qsList,function(x) as.vector(x))
+    names(qv$Mean)<-attr(qsList$Mean,"names")
+    names(qv$SD)<-attr(qsList$SD,"names")
+     names(qv$sd.alpha)<-attr(qsList$sd.alpha,"names")
+    #if(min(Ns_Base)!=ncol(Baseline) | min(Ns_Post)!=ncol(PostTreatment)){warning("Some NA's in data")}  we assume this: because we enforce no existence of NA values, then the sum of each row will have the ncol.
 #FIX ME: slow for eset.1 eset.2  
-       Sigmas_Base<-sigmasCpp(Baseline,out$Sums_Base/Ns$Ns_Base,Ns$Ns_Base)
-       Sigmas_Post<-sigmasCpp(PostTreatment,out$Sums_Post/Ns$Ns_Post,Ns$Ns_Post)
-
-     #Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
+          #Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
       #Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2)/(Ns_Post-1)
-      ROWS<-rownames(Baseline)
-      DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns_Post,Ns_Base)
+     # ROWS<-rownames(Baseline)
+     # DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns_Post,Ns_Base)
       #calculate degrees of freedom
-
-
-  if(any(DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
-      DOF[DOF<3]<-3
-      Mean=(out$Sums_Post/Ns$Ns_Post-out$Sums_Base/Ns$Ns_Base)
-      SD=sqrt(Sigmas_Base/Ns$Ns_Base+Sigmas_Post/Ns$Ns_Post)
-    }
-  sd.alpha = sqrt(SD^2+min.variance.factor)/SD
-  sd.alpha[is.infinite(sd.alpha)] = 1
-
-  dat = newQSarray(mean=Mean,
-                SD=sqrt(SD^2+min.variance.factor),
-                sd.alpha = sd.alpha,
-                dof=DOF,
+if(any(qv$DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.")}
+      qv$DOF[qv$DOF<3]<-3
+     # Mean=(out$Sums_Post/Ns$Ns_Post-out$Sums_Base/Ns$Ns_Base)
+     # SD=sqrt(Sigmas_Base/Ns$Ns_Base+Sigmas_Post/Ns$Ns_Post)
+    
+    qv$sd.alpha[is.infinite(qv$sd.alpha)] = 1
+    dat = newQSarray(mean=qv$Mean,
+                SD=qv$SD,
+                sd.alpha = qv$sd.alpha,
+                dof=qv$DOF,
                 var.method="Welch's"
   )
+
+
+    }#if !paired
+  #sd.alpha = sqrt(SD^2+min.variance.factor)/SD
+  #qv$sd.alpha[is.infinite(qv$sd.alpha)] = 1
+
+  #dat = newQSarray(mean=qv$Mean,
+   #             SD=qv$SD,
+    #            sd.alpha = qv$sd.alpha,
+     #           dof=qv$DOF,
+      #          var.method="Welch's"
+ # )
   dat
 }
 
