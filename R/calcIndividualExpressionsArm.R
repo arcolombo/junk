@@ -35,26 +35,34 @@ calcIndividualExpressionsArm<-function(Baseline,PostTreatment,paired=FALSE,min.v
       }
       PostTreatment = PostTreatment[,colnames(Baseline)]
       ##########First calculate the differential expression for individual genes
-#      Sums_Base<-rowSums(Baseline) #na.rm is not needed if enforce
- #     Sums_Post<-rowSums(PostTreatment)
+#      Sums_Base<-rowSums(Baseline)
+      # Sums_Post<-rowSums(PostTreatment)
      # Ns<-ncol(Baseline-PostTreatment)#the ncol will be equal to all of the remove NA
       #if(min(Ns)!=ncol(Baseline)){warning("Some NA's in data")} ignore by assumption
      Ns<-ncol(Baseline) #ncol identical(ncol(Baseline,ncol(PostTreatment)) if NA enforced 
   #  Sigmas_Base<-rowSums((Baseline-PostTreatment-(Sums_Base-Sums_Post)/Ns)^2)/(Ns-1)
     qsList<-sigmaArm(Baseline,PostTreatment,Ns,min.variance.factor)
-     #DOF<-Ns 
-      if(any(qsList$DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
-      qsList$DOF[qsList$DOF<3,]<-3
-      #Mean=(qsList$Mean)
-      #SD=(qsList$SD)
-#FIX ME: assign from qsLIst dont' need to save twice
-   sd.alpha = sqrt(SD^2+min.variance.factor)/SD
-  sd.alpha[is.infinite(sd.alpha)] = 1
+    qv<-lapply(qsList,function(x) as.vector(x))
+    names(qv$Mean)<-attr(qsList$Mean,"names")
+    names(qv$SD)<-attr(qsList$SD,"names")
+     names(qv$SDAlpha)<-attr(qsList$SDAlpha,"names")
 
-      dat = newQSarray(mean=qsList$Mean,
-                SD=qsList$SD,
-                sd.alpha = sd.alpha,
-                dof=qsList$DOF,
+      if(any(qv$DOF<3)){warning("Some degrees of freedom are below minimum. They have been set to 3.\nPlease refer to section 3.4 of the vignette for information on running qusage with small sample sizes.")}
+      qv$DOF[qv$DOF<3]<-3
+   
+     
+     # Mean=(Sums_Post-Sums_Base)/Ns
+    #  SD1=sqrt(Sigmas_Base/Ns)
+   #  SD2=sqrt(SD1^2+min.variance.factor)
+#FIX ME: assign from qsLIst dont' need to save twice
+  # sd.alpha = sqrt(SD1^2+min.variance.factor)/SD1
+  #sd.alpha[is.infinite(sd.alpha)] = 1
+
+   qv$SDAlpha[is.infinite(qv$SDAlpha)]=1
+      dat = newQSarray(mean=qv$Mean,
+                SD=qv$SD,
+                sd.alpha = qv$SDAlpha,
+                dof=qv$DOF,
                 var.method="Welch's"
   )
 
@@ -82,10 +90,10 @@ calcIndividualExpressionsArm<-function(Baseline,PostTreatment,paired=FALSE,min.v
        Sigmas_Base<-sigmasCpp(Baseline,out$Sums_Base/Ns$Ns_Base,Ns$Ns_Base)
        Sigmas_Post<-sigmasCpp(PostTreatment,out$Sums_Post/Ns$Ns_Post,Ns$Ns_Post)
 
-     #Sigmas_Base<-rowSums((Baseline-(out$Sums_Base)/Ns$Ns_Base)^2)/(Ns$Ns_Base-1)
+     #Sigmas_Base<-rowSums((Baseline-(Sums_Base)/Ns_Base)^2)/(Ns_Base-1)
       #Sigmas_Post<-rowSums((PostTreatment-(Sums_Post)/Ns_Post)^2)/(Ns_Post-1)
       ROWS<-rownames(Baseline)
-      DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns$Ns_Post,Ns$Ns_Base)
+      DOF<-Ni(Sigmas_Post+min.variance.factor,Sigmas_Base+min.variance.factor,Ns_Post,Ns_Base)
       #calculate degrees of freedom
 
 
