@@ -13,11 +13,11 @@ qusage is published software that is slow for large runs, SpeedSage corrects for
 #Bottlenecking of Functions
 Qusage can improve the speed of its algorithm by minimizing the cost of computaiton.
 
-##changes calcIndividualExpressionsC
-trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up calcIndividualExpressionsC 2X
+##changes Armadillo C++ 
+trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up calcIndividualExpressions, as well as using C++ libraries.
 
 #Individual Expression Function
-This test the local version which enforces no NA in Baseline or PostTreatment object, this reduces the flexibility. this test data is from the vignette where postTreatment was modified to be Baseline+20.4, a simple training set.
+This test the local version which enforces no NA in Baseline or PostTreatment object, this reduces the flexibility. this test data is from the vignette where postTreatment was modified to be Baseline+20.4, a simple training set from the QuSAGE vignette.
 
 ```{r} 
 library(inline)
@@ -37,16 +37,17 @@ ISG.geneSet<-read.gmt(fileISG)
 ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
 Baseline<-eset
 PostTreatment<-eset+20.4
+ncol(Baseline) #not splitting up eset
 #paired
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
 test1<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
 test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
 test3<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE)
-qplot(abs(test1[[1]]-test3[[1]]))
-qplot(abs(test1[[2]]-test3[[2]]))
-qplot(abs(test1[[3]]-test3[[3]]))
-qplot(abs(test1[[4]]-test3[[4]]))
+qplot(abs(test1[[1]]-test3[[1]]), xlab="Mean Error")
+qplot(abs(test1[[2]]-test3[[2]]), xlab="SD Err") 
+qplot(abs(test1[[3]]-test3[[3]]), xlab="SD.Alpha Err")
+qplot(abs(test1[[4]]-test3[[4]]), xlab="DOF Err")
 
 mb<-microbenchmark(
 test1<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6),
@@ -74,10 +75,10 @@ e1<-(abs(testSE1[[1]]-testSE2[[1]]))
 e2<-(abs(testSE1[[2]]-testSE2[[2]]))
 e3<-(abs(testSE1[[3]]-testSE2[[3]]))
 e4<-(abs(testSE1[[4]]-testSE2[[4]]))
-qplot(as.vector(e1))
-qplot(as.vector(e2))
-qplot(as.vector(e3))
-qplot(as.vector(e4))
+qplot(as.vector(e1), xlab="mean error")
+qplot(as.vector(e2), xlab="SD err")
+qplot(as.vector(e3), xlab= "DOF er")
+qplot(as.vector(e4), xlab="sd.alpha er")
 
 
 
@@ -127,6 +128,7 @@ sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/
 
 eset.1<-eset-40.3
 eset.2<-eset+100.5
+ncol(eset.1) #splitting eset in half
 original<-calcIndividualExpressions(eset.1,eset.2,paired=TRUE)
 cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=TRUE)
 arm<-calcIndividualExpressionsArm(eset.1,eset.2,paired=TRUE)
@@ -135,10 +137,10 @@ e1<-(abs(original[[1]]-arm[[1]]))
 e2<-(abs(original[[2]]-arm[[2]]))
 e3<-(abs(original[[3]]-arm[[3]]))
 e4<-(abs(original[[4]]-arm[[4]]))
-qplot(as.vector(e1))
-qplot(as.vector(e2))
-qplot(as.vector(e3))
-qplot(as.vector(e4))
+qplot(as.vector(e1),xlab="Mean err")
+qplot(as.vector(e2), xlab="SD err")
+qplot(as.vector(e3), xlab="DOF err")
+qplot(as.vector(e4), xlab="SD.alpha er")
 
 
 microbenchmark(
@@ -152,9 +154,9 @@ library(profr)
 library(ggplot2)
 
 yy<-profr(calcIndividualExpressions(eset.1,eset.2,paired=TRUE))
-ggplot(yy) + labs(title="Qusage PE Default")
+ggplot(yy) + labs(title="Qusage PE Default Split")
 tt<-profr(calcIndividualExpressionsArm(eset.1,eset.2,paired=TRUE))
-ggplot(tt)+ labs(title="Qusage PE in Arm")
+ggplot(tt)+ labs(title="Qusage PE in Arm Split Eset")
 
 ```
 
@@ -171,6 +173,7 @@ library(ggplot2)
 library(Rcpp)
 eset.1<-system.file("extdata","eset.1.RData",package="speedSage")
 eset.2<-system.file("extdata","eset.2.RData",package="speedSage")
+ncol(eset.1)
 load(eset.1)
 load(eset.2)
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
@@ -182,10 +185,10 @@ e1<-(abs(original[[1]]-arm[[1]]))
 e2<-(abs(original[[2]]-arm[[2]]))
 e3<-(abs(original[[3]]-arm[[3]]))
 e4<-(abs(original[[4]]-arm[[4]]))
-qplot(as.vector(e1))
-qplot(as.vector(e2))
-qplot(as.vector(e3))
-qplot(as.vector(e4))
+qplot(as.vector(e1), xlab="mean err")
+qplot(as.vector(e2), xlab="SD er")
+qplot(as.vector(e3), xlab="DOF er")
+qplot(as.vector(e4), xlab="sd.alpha er")
 
 
 
@@ -197,8 +200,8 @@ microbenchmark(
 
 x<-profr(calcIndividualExpressions(eset.1,eset.2,paired=FALSE))
 y<-profr(calcIndividualExpressionsArm(eset.1,eset.2,paired=FALSE))
-ggplot(x) + labs(title="Qusage SE Default Test 2")
-ggplot(y) + labs(title="Qusage SE Armadillo Test 2")
+ggplot(x) + labs(title="Qusage SE Default Split Eset")
+ggplot(y) + labs(title="Qusage SE Armadillo Split Eset")
 
 
 ```
