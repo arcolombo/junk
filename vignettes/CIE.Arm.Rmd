@@ -178,6 +178,7 @@ load(eset.2)
 ncol(eset.1) #split by label
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaSingle.cpp")
 original<-calcIndividualExpressions(eset.1,eset.2,paired=FALSE)
 cpp<-calcIndividualExpressionsC(eset.1,eset.2,paired=FALSE)
 arm<-calcIndividualExpressionsArm(eset.1,eset.2,paired=FALSE)
