@@ -1,5 +1,5 @@
 ---
-title: "Qusage: Speeding up in Rcpp"
+title: "Qusage: Speeding up in RcppArmadillo"
 author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
 output: 
     pdf_document:
