@@ -4,7 +4,7 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-List mylm(NumericVector yr, NumericMatrix Xr) {
+List armLm(NumericVector yr, NumericMatrix Xr) {
 
     int n = Xr.nrow(), k = Xr.ncol();
 

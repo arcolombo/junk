@@ -1,4 +1,4 @@
-#'  A wrapper function to calculate comparisons between groups in a dataset. A note on var.equal: LIMMA's linear model function can only be run when assuming equal  variances. If var.equal==TRUE, then a linear model will be created on the entire dataset at once. Otherwise, calcIndividualExpressions will be called for the comparison of interest, and means and SDs will be calculated directly.One benefit of using LIMMA's pooled variance calculation is that the linear models allow for more complicated comparisons (e.g. "(A+B)-C" or similar). This may be of interest to some users, but in order to do this, you must assume equal variances between all groups. One caveat regarding paired samples: LIMMA can not fit a linear model when the paired samples are convoluted with the groups (e.g. one set of paired (trt vs mock) samples in patients with  disease, combined with a set of paired samples from healthy controls). If var.equal==TRUE, these groups must be run separately to correctly fit the model (e.g. run disease first, then healthy controls).
+#' A wrapper function to calculate comparisons between groups in a dataset. A note on var.equal: LIMMA's linear model function can only be run when assuming equal  variances. If var.equal==TRUE, then a linear model will be created on the entire dataset at once. Otherwise, calcIndividualExpressions will be called for the comparison of interest, and means and SDs will be calculated directly.One benefit of using LIMMA's pooled variance calculation is that the linear models allow for more complicated comparisons (e.g. "(A+B)-C" or similar). This may be of interest to some users, but in order to do this, you must assume equal variances between all groups. One caveat regarding paired samples: LIMMA can not fit a linear model when the paired samples are convoluted with the groups (e.g. one set of paired (trt vs mock) samples in patients with  disease, combined with a set of paired samples from healthy controls). If var.equal==TRUE, these groups must be run separately to correctly fit the model (e.g. run disease first, then healthy controls).
 #' @param eset a matrix of log2(expression values), with rows of features and columns of samples 
 #' @param labels vector of labels representing each column of eset.
 #' @param contrast a string describing which of the groups in 'labels' we want to compare. This is usually of the form 'trt-ctrl', where 'trt' and 'ctrl' are groups represented in 'labels'.
@@ -6,16 +6,17 @@
 #' @param var.equal a logical variable indicating whether to treat the two variances as being equal. If TRUE then the pooled variance is used to estimate the variance otherwise the Welch approximation is used.
 #' @param bayesEstimation if true, use a bayesian framework to estimate the standard deviation (via limma's eBayes function). 
 #' @param min.variance.factor a factor to add to the SDs to ensure that none are equal to 0. Only used if var.equal==FALSE or bayesEstimation==FALSE.
+#' @param implicitContrast boolean to explicitly contrast the design fit using an intercept constant, this increases for performance by minimizing calls to limma
 #' @import limma
 #' @export
 #' @return qusage data object
-makeComparison <- function(eset,       ##a matrix of log2(expression values), with rows of features and columns of samples 
+makeComparisonArm <- function(eset,       ##a matrix of log2(expression values), with rows of features and columns of samples 
                            labels,     ##vector of labels representing each column of eset.
                            contrast,   ##a string describing which of the groups in 'labels' we want to compare. This is usually of the form 'trt-ctrl', where 'trt' and 'ctrl' are groups represented in 'labels'. 
                            pairVector=NULL,  ##A vector of factors (usually just 1,2,3,etc.) describing the sample pairings. This is often just a vector of patient IDs or something similar. If not provided, all samples are assumed to be independent.
                            var.equal = FALSE, ##a logical variable indicating whether to treat the two variances as being equal. If TRUE then the pooled variance is used to estimate the variance otherwise the Welch approximation is used. 
                            bayesEstimation = TRUE, ##if true, use a bayesian framework to estimate the standard deviation (via limma's eBayes function). 
-                           min.variance.factor=10^-8  ##a factor to add to the SDs to ensure that none are equal to 0. Only used if var.equal==FALSE or bayesEstimation==FALSE.
+                           min.variance.factor=10^-8  ##a factor to add to the SDs to ensure that none are equal to 0. Only used if var.equal==FALSE or bayesEstimation==FALSE. 
 ){
   if(is(eset, "ExpressionSet")){eset = exprs(eset)}
   ##check that input is formatted correctly
@@ -48,8 +49,15 @@ makeComparison <- function(eset,       ##a matrix of log2(expression values), wi
     ## Pooled Variance (Linear Model) method
 
     ##create design matrix
-    f = "~0+labels"
-    designNames = levels(labels)
+     f = "~0+labels"
+
+    if( class(labels)!="factor" ){
+    designNames = levels(factor(labels))
+      }
+    if( class(labels)=="factor") {
+     designNames<-levels(labels) 
+     }
+
     if(paired){
       f = paste(f,"+pairVector",sep="")
   designNames = c(designNames, paste("P",levels(pairVector)[-1],sep=""))
@@ -59,30 +67,32 @@ makeComparison <- function(eset,       ##a matrix of log2(expression values), wi
 
     ## Fit the linear model with the given deign matrix
     ## 'fit' contains info on each coefficient (i.e. column of design matrix) in the model.
-    fit <- lmFit(eset, design=design)
-
-    ##Contrast the coefficients against each other to get a direct comparison.
+  
+    fit<-lmFit(eset,design=design)
     contrast.matrix <- makeContrasts( contrasts=contrast, levels=design)
     fit2 <- contrasts.fit(fit,contrast.matrix)
 
     ##calculate number of samples use in the contrast
     n.samples = sum(labels %in% rownames(contrast.matrix)[contrast.matrix!=0])
-
+    
     ##if using Bayes estimation, calculate the moderated t-statistics for each comparison
-    if(bayesEstimation){
+   #FIX ME: Armadillo can perform these comps 
+   if(bayesEstimation){
       fit2b <- eBayes(fit2)
-      SD = (fit2b$coefficients/(fit2b$t))[,1]
-  sd.alpha = SD/(fit2b$sigma*fit2b$stdev.unscaled)
-      sd.alpha[is.infinite(sd.alpha)] = 1
-      dof = fit2b$df.total
+     # SD = (fit2b$coefficients/(fit2b$t))[,1]
+  #sd.alpha = SD/(fit2b$sigma*fit2b$stdev.unscaled)
+  #    sd.alpha[is.infinite(sd.alpha)] = 1
+   #   dof = fit2b$df.total
+    arrayResult<-bayesEstimation(fit2b$coefficients,fit2b$t,fit2b$sigma,fit2b$stdev.unscaled,fit2b$df.total)
     }else{
-      SD = sqrt((fit2$sigma*fit2b$stdev.unscaled)^2 + min.variance.factor)
-      sd.alpha = SD/(fit2$sigma*fit2$stdev.unscaled)
-      sd.alpha[is.infinite(sd.alpha)] = 1
-      dof = fit2$df.residual
+     # SD = sqrt((fit2$sigma*fit2b$stdev.unscaled)^2 + min.variance.factor)
+     # sd.alpha = SD/(fit2$sigma*fit2$stdev.unscaled)
+      #sd.alpha[is.infinite(sd.alpha)] = 1
+     # dof = fit2$df.residual
+     arrayResult<-notbayesEstimation(fit2$sigma,fit2b$stdev.unscaled,min.variance.factor,as.matrix(fit2$df.residual))
     }
 
-
+    #FIX ME : convert to vectors, and name everything
     ##format 
     results = newQSarray(params,
                       mean = fit2$coefficients[,1],
@@ -119,7 +129,7 @@ makeComparison <- function(eset,       ##a matrix of log2(expression values), wi
       #}
     }
 
-    results = newQSarray(c(params, calcIndividualExpressions(eset.2,eset.1,paired=paired,min.variance.factor=min.variance.factor)))
+    results = newQSarray(c(params, calcIndividualExpressionsArm(eset.2,eset.1,paired=paired,min.variance.factor=min.variance.factor)))
   }
   return(results)
 }

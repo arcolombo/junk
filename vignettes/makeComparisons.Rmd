@@ -1,5 +1,5 @@
 ---
-title: "Qusage: Speeding up in RcppArmadillo"
+title: "Qusage: Speeding up makeComparisons.R in RcppArmadillo"
 author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
 output: 
     pdf_document:
@@ -9,14 +9,12 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
 #SpeedSage Intro
-qusage is published software that is slow for large runs, SpeedSage corrects for speed and efficiency at large orders
-#Bottlenecking of Functions
-Qusage can improve the speed of its algorithm by minimizing the cost of computaiton.
+qusage is published software that is slow for large runs, SpeedSage corrects for speed and efficiency at large orders Qusage can improve the speed of its algorithm by minimizing the cost of computaiton.
 
 ##changes Armadillo C++ 
-trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up calcIndividualExpressions, as well as using C++ libraries.
+trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up makeComparisons.R, as well as using C++ libraries.
 
-#Individual Expression Function
+#makeComparisons Function
 This test the local version which enforces no NA in Baseline or PostTreatment object, this reduces the flexibility. this test data is from the vignette where postTreatment was modified to be Baseline+20.4, a simple training set from the QuSAGE vignette.
 
 ```{r} 
@@ -27,27 +25,36 @@ library(parallel)
 library(speedSage)
 library(qusage)
 library(ggplot2)
+library(limma)
+library(stats)
 eset<-system.file("extdata","eset.RData",package="speedSage")
 load(eset)
+source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/statsLm.R")
+source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/statslm.Fit.R")
 labels<-c(rep("t0",134),rep("t1",134))
 contrast<-"t1-t0"
 colnames(eset)<-c(rep("t0",134),rep("t1",134))
 fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
 ISG.geneSet<-read.gmt(fileISG)
 ISG.geneSet<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
-Baseline<-eset
-PostTreatment<-eset+20.4
-ncol(Baseline) #not splitting up eset
-#paired
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmasCpp.cpp")
-test1<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
-test2<-calcIndividualExpressionsC(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6)
-test3<-calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE)
-qplot(abs(test1[[1]]-test3[[1]]), xlab="Mean Error")
-qplot(abs(test1[[2]]-test3[[2]]), xlab="SD Err") 
-qplot(abs(test1[[3]]-test3[[3]]), xlab="SD.Alpha Err")
-qplot(abs(test1[[4]]-test3[[4]]), xlab="DOF Err")
+pairVector<-NULL
+var.equal<-TRUE
+bayesEstimation<-TRUE
+paired<-FALSE
+
+design<-model.matrix(~1+labels) #with intercept
+limmaFit<-lmFit(eset,design)
+
+#need lm.fit stats
+
+#need lm
+
+#what is the difference between lm and lm.fit why is there stats missing?
+#profiling makeComparisons
+
+
+
+
 
 mb<-microbenchmark(
 test1<-calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6),
@@ -58,9 +65,9 @@ mb
 require(profr)
 require(ggplot2)
 x1<-profr(calcIndividualExpressions(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6,na.rm=TRUE))
-ggplot(x1)+labs(title="Qusage PE Default")
+ggplot(x1)+labs(title="Qusage SE Default")
 x2<-profr(calcIndividualExpressionsArm(Baseline,PostTreatment,paired=TRUE,min.variance.factor=10^-6))
-ggplot(x2)+labs(title="Qusage PE Armadillo")
+ggplot(x2)+labs(title="Qusage SE Armadillo")
 
 
 
@@ -154,9 +161,9 @@ library(profr)
 library(ggplot2)
 
 yy<-profr(calcIndividualExpressions(eset.1,eset.2,paired=TRUE))
-ggplot(yy) + labs(title="Qusage PE Default Not Split")
+ggplot(yy) + labs(title="Qusage PE Default Split")
 tt<-profr(calcIndividualExpressionsArm(eset.1,eset.2,paired=TRUE))
-ggplot(tt)+ labs(title="Qusage PE in Arm Not Split Eset")
+ggplot(tt)+ labs(title="Qusage PE in Arm Split Eset")
 
 ```
 
