@@ -490,7 +490,7 @@ calcVIF = function(eset,         ##a matrix of log2(expression values). This mus
     design <- model.matrix(formula(f))
     colnames(design) <- designNames
   }
-  
+  #FIX ME: armadillo here!
   ##run VIF calculation on each gene set
   vif = sapply(names(geneSets),function(i){
     GNames<-names(geneResults$mean)[geneSets[[i]]]
@@ -501,22 +501,16 @@ calcVIF = function(eset,         ##a matrix of log2(expression values). This mus
       return(interGeneCorrelation(eset[gs.i,],design)$vif)
     }
     else{
-#       grps = sub("\\s","",strsplit(geneResults$contrast,"-")[[1]])  ##only calc vif for the groups that were compared
-#       vif.grp = sapply(split(1:ncol(eset),geneResults$labels)[grps], function(j){
-#         covar.mat = cov(t(eset[gs.i,j]))
-#         return(sum(covar.mat)/sum(diag(covar.mat)))
-#       })
-#       return(mean(vif.grp,na.rm=T))
       
-      ##pooled covariance matrix
       grps = split(1:ncol(eset),geneResults$labels)
       if(!useAllData){
         toInclude = sub("\\s","",strsplit(geneResults$contrast,"-")[[1]])  ##only calc vif for the groups that were compared
         grps = grps[toInclude]
       }
+    
       covar.mat = cov(t(eset[gs.i,grps[[1]]])) * (length(grps[[1]])-1)
       if(length(grps)>1){
-        for(i in 2:length(grps)){
+       for(i in 2:length(grps)){
           covar.mat = covar.mat + ( cov(t(eset[gs.i,grps[[i]]])) * (length(grps[[i]])-1) )
         } 
       }
