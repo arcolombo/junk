@@ -2,7 +2,8 @@
 #include <RcppArmadillo.h>
 using namespace arma;
 //[[Rcpp::export]]
-extern "C" SEXP calcVIFarm(SEXP namesGrms, SEXP geneSets, SEXP rnEsets, SEXP esets, SEXP labels, SEXP sdAlphas) {
+extern "C" SEXP calcVIFarm_nosdalpha(SEXP namesGrms, SEXP geneSets, SEXP rnEsets, SEXP esets, SEXP labels) {
+//this calculates the vif without using sdAlphas from geneResults
 Rcpp::CharacterVector namesGrm(namesGrms);
 Rcpp::NumericVector geneSet(geneSets);
 Rcpp::CharacterVector rnEset(rnEsets);
@@ -13,7 +14,6 @@ Rcpp::NumericVector grps(0);
 Rcpp::NumericMatrix eset(esets);
 Rcpp::CharacterVector label(labels); //unique colnames(eset)
 arma::mat covarMat;
-Rcpp::NumericVector sdAlpha(sdAlphas); //must not be NULL check in R
 arma::mat results;
 arma::uvec agrps;
 arma::vec vif;
@@ -70,19 +70,19 @@ Rcpp::CharacterVector colN = Rcpp::List(eset.attr("dimnames"))[1];
   
  //multiply matrix by the sd.alpha vectors
 //Rcpp::CharacterVector a = rnEset[gs-1];
-sdAlpha = sdAlpha[gs-1];
+//sdAlpha = sdAlpha[gs-1];
  //cout << covarMat;
-arma::vec sdalpha(sdAlpha.begin(),sdAlpha.size(),false);
+//arma::vec sdalpha(sdAlpha.begin(),sdAlpha.size(),false);
 
   
 
 // FIX ME : fix the  covar.mat = t(covar.mat*a)*a computations
-int row = size(covarMat)[0];
-int col = size(covarMat)[1];
+//int row = size(covarMat)[0];
+//int col = size(covarMat)[1];
 //cout << " row "<<row << " col "<<col; 
-results = results.zeros(row,col); //storage object
+//results = results.zeros(row,col); //storage object
 
- for(int i=0; i<row;i++){
+/* for(int i=0; i<row;i++){
     for(int j =0; j<col;j++){
      covarMat(i,j) = covarMat(i,j)*as_scalar(sdalpha(i));
    }
@@ -93,19 +93,17 @@ results = results.zeros(row,col); //storage object
      results(i,j) = covarMat(j,i)*as_scalar(sdalpha(i));
    }
 }
-
+*/
  
 
 //cout<<accu(results)<<" "<<accu(results.diag()) ;
-vif = accu(results)/accu(results.diag());
+vif = accu(covarMat)/accu(covarMat.diag());
 
 //FIX ME: just return the vif
 return Rcpp::List::create(Rcpp::Named("GNames") = GNames,
                          // Rcpp::Named("gs.i") = Rcpp::wrap(ags), 0 based
                           Rcpp::Named("gs.i") = gs,
                           Rcpp::Named("covar.mat") = Rcpp::wrap(covarMat),
-                          Rcpp::Named("final.covar.mat") = Rcpp::wrap(results),
-                          Rcpp::Named("a") = Rcpp::wrap(sdAlpha),
                           Rcpp::Named("vif") = Rcpp::wrap(vif));
                          
                            
