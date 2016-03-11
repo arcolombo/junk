@@ -18,7 +18,8 @@
 ## Many of the parameters are left out of this function for simplicity, so for greater control
 ## each of the functions must be called separately.
 
-qusageArm = function(eset,       ##a matrix of log2(expression values), with rows of features and columns of samples. OR an object of class ExpressionSet 
+qusageCutArm = function(eset,       ##a matrix of log2(expression values), with rows of features and columns of samples. OR an object of class ExpressionSet 
+
                   labels,            ##vector of labels representing each column of eset.
                   contrast,          ##a string describing which of the groups in 'labels' we want to compare. This is usually of the form 'trt-ctrl', where 'trt' and 'ctrl' are groups represented in 'labels'. 
                   geneSets,          ##a list of pathways to be compared. Each item in the list is a vector of names that correspond to the row names of eset.
@@ -476,22 +477,6 @@ calcVIFArm = function(eset,         ##a matrix of log2(expression values). This 
   if(is(eset, "ExpressionSet")){eset = exprs(eset)}
   if(class(geneResults) != "QSarray"){stop("geneResults must be a QSarray object, as created by makeComparison")}
     
-  ##create design matrix
-  if(useCAMERA){
-    labels = geneResults$labels
-    paired=F
-    if(!is.null(geneResults$pairVector)){paired=T; pairVector = geneResults$pairVector}
-    
-    f = "~0+labels"
-    designNames = levels(labels)
-    if(paired){
-      f = paste(f,"+pairVector",sep="")
-      designNames = c(designNames, paste("P",levels(pairVector)[-1],sep=""))
-    }
-    design <- model.matrix(formula(f))
-    colnames(design) <- designNames
-  }
-
    if(useArmadillo){
   #FIX ME: armadillo here!
   ##run VIF calculation on each gene set
@@ -511,41 +496,6 @@ calcVIFArm = function(eset,         ##a matrix of log2(expression values). This 
   return(as.vector(t$vif))
    })
     } #if useArmadillo True
-
-   if(!useArmadillo) {#default run 
-    vif = sapply(names(geneSets),function(i){
-    GNames<-names(geneResults$mean)[geneSets[[i]]]
-    gs.i = which(rownames(eset)%in%GNames)
-    if(length(gs.i)<2){warning("GeneSet '",i,"' contains one or zero overlapping genes. NAs produced.");return(NA)}
-    if(useCAMERA){
-      return(interGeneCorrelation(eset[gs.i,],design)$vif)
-    }
-    else{
-        grps = split(1:ncol(eset),geneResults$labels)
-     if(!useAllData){
-        toInclude = sub("\\s","",strsplit(geneResults$contrast,"-")[[1]])  ##only calc vif for the groups that were compared
-        grps = grps[toInclude]
-      }
-      covar.mat = cov(t(eset[gs.i,grps[[1]]])) * (length(grps[[1]])-1)
-     if(length(grps)>1){
-        for(i in 2:length(grps)){
-          covar.mat = covar.mat + ( cov(t(eset[gs.i,grps[[i]]])) * (length(grps[[i]])-1) )
-        }
-      }
-
-     covar.mat = covar.mat / (ncol(eset) - length(grps))
-
-      ##multiply matrix by the sd.alpha vectors
-      if(!is.null(geneResults$sd.alpha)){
-        a = geneResults$sd.alpha[rownames(eset)[gs.i]]
-        covar.mat = t(covar.mat*a)*a
-      }
-      vif = sum(covar.mat)/sum(diag(covar.mat))
-      return(vif)
-    }
- }) #sapply vif
- }#!useArmadillo
-
 
   geneResults$vif = vif
   if(!is.null(geneResults$path.PDF)){ ##if defined, rescale the pdf with the new vif values

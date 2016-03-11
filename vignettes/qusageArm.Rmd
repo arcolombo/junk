@@ -1,0 +1,122 @@
+---
+title: "Qusage: Speeding up VIF in RcppArmadillo"
+author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
+output: 
+    pdf_document:
+      toc: true
+      number_sections: true
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+#SpeedSage Intro
+qusage is published software that is slow for large runs, SpeedSage corrects for speed and efficiency at large orders.  there is Bottlenecking of Functions
+Qusage can improve the speed of its algorithm by minimizing the cost of computaiton.
+
+##changes Armadillo C++ 
+trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up calcIndividualExpressions, as well as using C++ libraries.
+
+#calcVif Function
+This test the local version which enforces no NA in Baseline or PostTreatment object, this reduces the flexibility. this test data is from the vignette where postTreatment was modified to be Baseline+20.4, a simple training set from the QuSAGE vignette.
+
+```{r} 
+library(inline)
+library(microbenchmark)
+library(Rcpp)
+library(parallel)
+library(speedSage)
+library(qusage)
+library(ggplot2)
+eset<-system.file("extdata","eset.RData",package="speedSage")
+load(eset)
+labels<-c(rep("t0",134),rep("t1",134))
+contrast<-"t1-t0"
+colnames(eset)<-c(rep("t0",134),rep("t1",134))
+fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
+ISG.geneSet<-read.gmt(fileISG)
+geneSets<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
+
+#cpp functions
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaSingle.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/bayesEstimation.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/notbayesEstimation.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
+
+pairVector<-NULL
+var.equal<-FALSE
+filter.genes<-FALSE
+n.points<-2^12
+
+
+#setting up calcVif call objects
+r
+useAllData<-TRUE
+useCAMERA<-FALSE
+##### QuSage::qusage default calc
+defaultSage<-qusage(eset,labels,contrast,geneSets,var.equal=FALSE)
+mySage<-qusageArm(eset,labels,contrast,geneSets,var.equal=FALSE)
+cut<-qusageCutArm(eset,labels,contrast,geneSets,var.equal=FALSE)
+
+```
+
+
+```{r}
+library(speedSage)
+useCAMERA<-FALSE
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
+
+
+library(ggplot2)
+speedUp<-microbenchmark(
+defaultSage<-qusage(eset,labels,contrast,geneSets,var.equal=FALSE),
+mySage<-qusageArm(eset,labels,contrast,geneSets,var.equal=FALSE), times=1000)
+
+speedUp
+
+library(profr)
+defaultX<-profr(qusage(eset,labels,contrast,geneSets,var.equal=FALSE))
+myX<-profr(qusageArm(eset,labels,contrast,geneSets,var.equal=FALSE))
+
+ggplot(defaultX)
+ggplot(myX)
+
+source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFArm.R")
+myVIF<-calcVIFArm(eset,geneResults)
+
+
+
+### TO DO ensure that calcVIFarm matches qusage::calcVIF.R
+
+identical(names(myVIF),names(ogVIF))
+identical(myVIF$labels,ogVIF$labels)
+ identical(myVIF$contrast,ogVIF$contrast)
+identical(myVIF$n.samples,ogVIF$n.samples)
+identical(myVIF$mean,ogVIF$mean)
+ identical(myVIF$sd.alpha,ogVIF$sd.alpha)
+ identical(myVIF$dof,ogVIF$dof)
+identical(myVIF$var.method,ogVIF$var.method)
+identical(myVIF$pathways,ogVIF$pathways)
+identical(myVIF$path.mean,ogVIF$path.mean)
+ identical(myVIF$path.size,ogVIF$path.size)
+identical(myVIF$ranges,ogVIF$ranges)
+ identical(myVIF$n.points,ogVIF$n.points)
+all.equal(myVIF$path.PDF,ogVIF$path.PDF)
+all.equal(myVIF$vif,ogVIF$vif)
+
+
+qplot( as.vector(abs(myVIF$path.PDF-ogVIF$path.PDF)), xlab="Path PDF ") 
+
+qplot( as.vector(abs(myVIF$vif-ogVIF$vif)), xlab="VIF ")
+
+library(ggplot2)
+mb<-microbenchmark(
+myVIF<-calcVIFArm(eset,geneResults),
+ogVIF<-calcVIF(eset,geneResults),times=1000 )
+
+autoplot(mb)
+
+mb
+```

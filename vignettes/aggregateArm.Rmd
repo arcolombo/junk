@@ -1,0 +1,119 @@
+---
+title: "Qusage: Speeding up VIF in RcppArmadillo"
+author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
+output: 
+    pdf_document:
+      toc: true
+      number_sections: true
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+#SpeedSage Intro
+qusage is published software that is slow for large runs, SpeedSage corrects for speed and efficiency at large orders.  there is Bottlenecking of Functions
+Qusage can improve the speed of its algorithm by minimizing the cost of computaiton.
+
+
+#aggregateGeneSet Function
+This test will perform the computations in the apply functions in c++.  additional assumptions could be made, but this will minimize the robust-ness of aggregateGeneSet function. perhaps there should be a robust and non-robust version.
+
+```{r} 
+library(inline)
+library(microbenchmark)
+library(Rcpp)
+library(parallel)
+library(speedSage)
+library(qusage)
+library(ggplot2)
+eset<-system.file("extdata","eset.RData",package="speedSage")
+load(eset)
+labels<-c(rep("t0",134),rep("t1",134))
+contrast<-"t1-t0"
+colnames(eset)<-c(rep("t0",134),rep("t1",134))
+fileISG<-system.file("extdata","c2.cgp.v5.1.symbols.gmt",package="speedSage")
+ISG.geneSet<-read.gmt(fileISG)
+geneSets<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
+
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaSingle.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/bayesEstimation.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/notbayesEstimation.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
+
+pairVector<-NULL
+var.equal<-FALSE
+filter.genes<-FALSE
+n.points<-2^12
+
+
+#setting up calcVif call objects
+results = makeComparisonArm(eset, labels, contrast, pairVector=pairVector,var.equal=var.equal)
+nu = floor(min(results$dof,na.rm=T))
+defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
+
+
+
+
+
+useAllData<-TRUE
+useCAMERA<-FALSE
+```
+
+
+
+
+```{r}
+library(speedSage)
+useCAMERA<-FALSE
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
+
+
+t2<-calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha) 
+
+
+
+library(ggplot2)
+speedUp<-microbenchmark(
+calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[1]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha),
+calcVIF(eset,geneResults) )
+speedUp
+
+source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFArm.R")
+myVIF<-calcVIFArm(eset,geneResults)
+
+
+
+### TO DO ensure that calcVIFarm matches qusage::calcVIF.R
+
+identical(names(myVIF),names(ogVIF))
+identical(myVIF$labels,ogVIF$labels)
+ identical(myVIF$contrast,ogVIF$contrast)
+identical(myVIF$n.samples,ogVIF$n.samples)
+identical(myVIF$mean,ogVIF$mean)
+ identical(myVIF$sd.alpha,ogVIF$sd.alpha)
+ identical(myVIF$dof,ogVIF$dof)
+identical(myVIF$var.method,ogVIF$var.method)
+identical(myVIF$pathways,ogVIF$pathways)
+identical(myVIF$path.mean,ogVIF$path.mean)
+ identical(myVIF$path.size,ogVIF$path.size)
+identical(myVIF$ranges,ogVIF$ranges)
+ identical(myVIF$n.points,ogVIF$n.points)
+all.equal(myVIF$path.PDF,ogVIF$path.PDF)
+all.equal(myVIF$vif,ogVIF$vif)
+
+
+qplot( as.vector(abs(myVIF$path.PDF-ogVIF$path.PDF)), xlab="Path PDF ") 
+
+qplot( as.vector(abs(myVIF$vif-ogVIF$vif)), xlab="VIF ")
+
+library(ggplot2)
+mb<-microbenchmark(
+myVIF<-calcVIFArm(eset,geneResults),
+ogVIF<-calcVIF(eset,geneResults),times=1000 )
+
+autoplot(mb)
+
+mb
+```
