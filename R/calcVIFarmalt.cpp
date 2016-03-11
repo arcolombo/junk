@@ -82,14 +82,14 @@ results = results.zeros(row,col); //storage object
 //cout<<accu(results)<<" "<<accu(results.diag()) ;
 vif = accu(results)/accu(results.diag());
 
-
+/*
 return Rcpp::List::create(Rcpp::Named("GNames") = GNames,
                           Rcpp::Named("gs.i") = gs,
                           Rcpp::Named("covar.mat") = Rcpp::wrap(covarMat),
                           Rcpp::Named("final.covar.mat") = Rcpp::wrap(results),
                           Rcpp::Named("a") = Rcpp::wrap(sdAlpha),
                           Rcpp::Named("vif") = Rcpp::wrap(vif));
-                       
- //  return Rcpp::List::create(Rcpp::Named("vif") = Rcpp::wrap(vif));           
+  */                     
+  return Rcpp::List::create(Rcpp::Named("vif") = Rcpp::wrap(vif));           
 
 }

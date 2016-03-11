@@ -48,9 +48,14 @@ Rcpp::CharacterVector colN = Rcpp::List(eset.attr("dimnames"))[1];
 
 vif = accu(covarMat)/accu(covarMat.diag());
 
-
+/*
 return Rcpp::List::create(Rcpp::Named("GNames") = GNames,
                           Rcpp::Named("gs.i") = gs,
                           Rcpp::Named("covar.mat") = Rcpp::wrap(covarMat),
                           Rcpp::Named("vif") = Rcpp::wrap(vif));
+*/
+
+return Rcpp::List::create(Rcpp::Named("vif") = Rcpp::wrap(vif));
+
+
  }

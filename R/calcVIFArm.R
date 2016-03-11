@@ -10,13 +10,13 @@ calcVIFArm = function(eset,         ##a matrix of log2(expression values). This 
                   useAllData = TRUE ##Boolean parameter determining whether to use all data in eset to calculated the VIF, or whether to only use data from the groups being contrasted. Only used if useCAMERA==FALSE
                 ){
     if(is.null(geneResults$pathways)){stop("Pathway Information not found. Please provide a list of gene sets.")}
-    geneSets = geneResults$pathways
+    geneSets = geneResults$pathways #numeric vector
 
   if(is(eset, "ExpressionSet")){eset = exprs(eset)}
   if(class(geneResults) != "QSarray"){stop("geneResults must be a QSarray object, as created by makeComparison")}
   ##run VIF calculation on each gene set
   vif = sapply(names(geneSets),function(i){
-    GNames<-names(geneResults$mean)[names(geneResults$mean)%in%geneSets[[i]]]
+    GNames<-names(geneResults$mean)[geneSets[[i]]]
     gs.i = which(rownames(eset)%in%GNames)
     if(length(gs.i)<2){warning("GeneSet '",i,"' contains one or zero overlapping genes. NAs produced.");return(NA)}
      if(!is.null(geneResults$sd.alpha)){
