@@ -95,7 +95,7 @@ qusage.single = function(eset,       ##a matrix of log2(expression values), with
   if(nu<5){cat("\nLow sample size detected. Increasing n.points in aggregateGeneSet.")}
   results = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
   cat("Done.\nCalculating variance inflation factors...")
-  results = calcVIF(eset, results)
+  results = calcVIFArm(eset, results)
   #cat("Done.\nCalculating homogeneity scores...")
   #results = calcHomogeneity(results, silent=TRUE, addVIF=FALSE)
   #cat("Done.\nCalculating correlation matrix...")  
@@ -250,7 +250,7 @@ makeComparisonArm <- function(eset,       ##a matrix of log2(expression values),
  
 
 #######Calculate individual gene differential expresseion for each gene
-## This function should usually be called by "makeComparison".
+## This function should usually be called by "makeComparisonArm".
 ## this requires sigmaArm.cpp and sigmaSingle.cpp must be compiled in local environment
 calcIndividualExpressionsArm<-function(Baseline,PostTreatment,paired=FALSE,min.variance.factor=10^-6){
   ###Baseline is the matix of gene expressions at baseline, row names are gene names
@@ -490,6 +490,8 @@ calcVIF = function(eset,         ##a matrix of log2(expression values). This mus
     design <- model.matrix(formula(f))
     colnames(design) <- designNames
   }
+
+   if(useArmadillo){
   #FIX ME: armadillo here!
   ##run VIF calculation on each gene set
   vif = sapply(names(geneSets),function(i){
@@ -497,35 +499,53 @@ calcVIF = function(eset,         ##a matrix of log2(expression values). This mus
     gs.i = which(rownames(eset)%in%GNames)
 #     gs.i = geneSets[[i]]
     if(length(gs.i)<2){warning("GeneSet '",i,"' contains one or zero overlapping genes. NAs produced.");return(NA)}    
+     if(!is.null(geneResults$sd.alpha)){
+       #call calcVIFarm.cpp with sdalpha return the list, and set attrbts
+       t<-calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha) #dispatches for each i in geneResults$pathways list
+         }
+         if(is.null(geneResults$sd.alpha)){
+         #call calcVIFarm.cpp without sdalpha  return the list , set attrbts
+        t<-calcVIFarm_nosdalphaalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels))
+        }
+  return(as.vector(t$vif))
+   })
+    } #if useArmadillo True
+
+   if(!useArmadillo) {#default run 
+    vif = sapply(names(geneSets),function(i){
+    GNames<-names(geneResults$mean)[geneSets[[i]]]
+    gs.i = which(rownames(eset)%in%GNames)
+    if(length(gs.i)<2){warning("GeneSet '",i,"' contains one or zero overlapping genes. NAs produced.");return(NA)}
     if(useCAMERA){
       return(interGeneCorrelation(eset[gs.i,],design)$vif)
     }
     else{
-      
-      grps = split(1:ncol(eset),geneResults$labels)
-      if(!useAllData){
+        grps = split(1:ncol(eset),geneResults$labels)
+     if(!useAllData){
         toInclude = sub("\\s","",strsplit(geneResults$contrast,"-")[[1]])  ##only calc vif for the groups that were compared
         grps = grps[toInclude]
       }
-    
       covar.mat = cov(t(eset[gs.i,grps[[1]]])) * (length(grps[[1]])-1)
-      if(length(grps)>1){
-       for(i in 2:length(grps)){
+     if(length(grps)>1){
+        for(i in 2:length(grps)){
           covar.mat = covar.mat + ( cov(t(eset[gs.i,grps[[i]]])) * (length(grps[[i]])-1) )
-        } 
+        }
       }
-      covar.mat = covar.mat / (ncol(eset) - length(grps))
-      
+
+     covar.mat = covar.mat / (ncol(eset) - length(grps))
+
       ##multiply matrix by the sd.alpha vectors
       if(!is.null(geneResults$sd.alpha)){
         a = geneResults$sd.alpha[rownames(eset)[gs.i]]
         covar.mat = t(covar.mat*a)*a
       }
-      
       vif = sum(covar.mat)/sum(diag(covar.mat))
       return(vif)
     }
-  })
+ }) #sapply vif
+ }#!useArmadillo
+
+
   geneResults$vif = vif
   if(!is.null(geneResults$path.PDF)){ ##if defined, rescale the pdf with the new vif values
     geneResults$path.PDF = t(t(geneResults$path.PDF) / pdfScaleFactor(geneResults))
