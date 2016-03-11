@@ -2,21 +2,23 @@
 #include <RcppArmadillo.h>
 using namespace arma;
 //[[Rcpp::export]]
-extern "C" SEXP calcVIFarm(SEXP namesGrms, SEXP geneSets, SEXP rnEsets, SEXP esets, SEXP labels, SEXP sdAlphas) {
+extern "C" SEXP calcVIFarmalt(SEXP namesGrms, SEXP gsI, SEXP geneSets, SEXP rnEsets, SEXP esets, SEXP labels, SEXP sdAlphas) {
 Rcpp::CharacterVector namesGrm(namesGrms);
 Rcpp::NumericVector geneSet(geneSets);
 Rcpp::CharacterVector rnEset(rnEsets);
 Rcpp::NumericVector idx = geneSet-1; //0 based
 Rcpp::CharacterVector GNames = namesGrm[idx];
-Rcpp::NumericVector gs(0);  //not efficient what size does gs need ?
 Rcpp::NumericVector grps(0); 
 Rcpp::NumericMatrix eset(esets);
+Rcpp::NumericVector gs(gsI);
 Rcpp::CharacterVector label(labels); //unique colnames(eset)
 arma::mat covarMat;
 Rcpp::NumericVector sdAlpha(sdAlphas); //must not be NULL check in R
 arma::mat results;
 arma::uvec agrps;
 arma::vec vif;
+arma::uvec ags = Rcpp::as<arma::uvec>(gs) - 1;
+//cout << ags;
 int lengthGrps = label.size();
 int n = eset.nrow(), m = eset.ncol();
 arma::mat est(eset.begin(),n,m,false);
@@ -24,8 +26,8 @@ arma::mat est(eset.begin(),n,m,false);
 
 //R is 1 based vectors , C++ is 0 based.  we subtract 1 from the R vectors to make 0 based, and extract rownames.  then we make gs 1 based when pushing back to R; this matches R compus
 
-
-for(int i =0; i < rnEset.size();i++){
+//FIX ME : input gs.i  gs don't run it here
+/*for(int i =0; i < rnEset.size();i++){
     for( int j=0; j<GNames.size();j++){
         if(rnEset(i)==GNames(j)){
          gs.push_back( i +1); // 1 based  
@@ -37,10 +39,11 @@ for(int i =0; i < rnEset.size();i++){
       cout << "GeneSet contains one of zero overlapping genes.  NAs produced";
       Rcpp::CharacterVector gs = "NA";
      }
-  
+  */
 //arma::vec ags(gs.begin(),gs.size(),false);
 // ags = ags -1;//0 based
-arma::uvec ags = Rcpp::as<arma::uvec>(gs) - 1; //0 based
+
+//arma::uvec ags = Rcpp::as<arma::uvec>(gs) - 1; //0 based
 
 //find groups to split the eset by labels using only unique labeling, where column names of eset is in terms of labels
 Rcpp::CharacterVector colN = Rcpp::List(eset.attr("dimnames"))[1];
