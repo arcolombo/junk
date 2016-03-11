@@ -18,7 +18,7 @@ calcVIFArm = function(eset,         ##a matrix of log2(expression values). This 
   vif = sapply(names(geneSets),function(i){
  # **calling calcVIFarm.cpp ***
      ##multiply matrix by the sd.alpha vectors
-    GNames<-names(geneResults$mean)[geneSets[[i]]]
+    GNames<-names(geneResults$mean)[names(geneResults$mean)%in%geneSets[[i]]]
     gs.i = which(rownames(eset)%in%GNames)
     if(length(gs.i)<2){warning("GeneSet '",i,"' contains one or zero overlapping genes. NAs produced.");return(NA)}
      if(!is.null(geneResults$sd.alpha)){
@@ -30,7 +30,7 @@ calcVIFArm = function(eset,         ##a matrix of log2(expression values). This 
        }
          if(is.null(geneResults$sd.alpha)){
          #call calcVIFarm.cpp without sdalpha  return the list , set attrbts
-        t<-calcVIFarm_nosdalpha(names(geneResults$mean),geneResults$pathways[[i]],rownames(eset),eset,unique(labels))
+        t<-calcVIFarm_nosdalphaalt(names(geneResults$mean),geneResults$pathways[[i]],rownames(eset),eset,unique(labels))
         }
   return(as.vector(t$vif))
    })

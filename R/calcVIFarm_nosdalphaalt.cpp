@@ -72,14 +72,14 @@ Rcpp::CharacterVector colN = Rcpp::List(eset.attr("dimnames"))[1];
   
  //multiply matrix by the sd.alpha vectors
 //Rcpp::CharacterVector a = rnEset[gs-1];
-sdAlpha = sdAlpha[gs-1];
+//sdAlpha = sdAlpha[gs-1];
  //cout << covarMat;
-arma::vec sdalpha(sdAlpha.begin(),sdAlpha.size(),false);
+//arma::vec sdalpha(sdAlpha.begin(),sdAlpha.size(),false);
 
   
 
 // FIX ME : fix the  covar.mat = t(covar.mat*a)*a computations
-int row = size(covarMat)[0];
+/*int row = size(covarMat)[0];
 int col = size(covarMat)[1];
 //cout << " row "<<row << " col "<<col; 
 results = results.zeros(row,col); //storage object
@@ -95,7 +95,7 @@ results = results.zeros(row,col); //storage object
      results(i,j) = covarMat(j,i)*as_scalar(sdalpha(i));
    }
 }
-
+*/
  
 
 //cout<<accu(results)<<" "<<accu(results.diag()) ;

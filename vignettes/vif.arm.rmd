@@ -43,6 +43,8 @@ sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/bayesEstimation.cpp")
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/notbayesEstimation.cpp")
 sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
 
 pairVector<-NULL
 var.equal<-FALSE
@@ -93,6 +95,9 @@ original<-list(GNames,gs.i,covar.mat,a , vif)
 
 t<-calcVIFarm(names(geneResults$mean),geneResults$pathways[[1]],rownames(eset),eset,unique(labels), geneResults$sd.alpha)
 useCAMERA<-FALSE
+
+t2<-calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha) 
+
 source("calcVIFArm.R")
 myVIF<-calcVIFArm(eset,geneResults)
 
