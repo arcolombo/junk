@@ -2,7 +2,7 @@
 title: "Qusage: Speeding up VIF in RcppArmadillo"
 author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
 output: 
-    html_document:
+    pdf_document:
       toc: true
       number_sections: true
 date: "`r format(Sys.time(), '%d %B, %Y')`"
@@ -70,7 +70,11 @@ gs.i = which(rownames(eset)%in%GNames)
 ###now to compare
 ```
 ```{r}
+library(speedSage)
 useCAMERA<-FALSE
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
+
 
 t2<-calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha) 
 
@@ -82,9 +86,7 @@ calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[1]],rownames(e
 calcVIF(eset,geneResults) )
 speedUp
 
-
-
-source("calcVIFArm.R")
+source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFArm.R")
 myVIF<-calcVIFArm(eset,geneResults)
 
 
