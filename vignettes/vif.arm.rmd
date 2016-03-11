@@ -60,15 +60,10 @@ geneResults = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
 
 useAllData<-TRUE
 useCAMERA<-FALSE
-
-
-
-
 ##### qusage VIF calc
 ogVIF<-calcVIF(eset,geneResults)
 
 #for local code use  
-
 ogGeneSets<-geneResults$pathways
 GNames<-names(geneResults$mean)[ogGeneSets[[1]]]
 gs.i = which(rownames(eset)%in%GNames)
@@ -97,6 +92,13 @@ t<-calcVIFarm(names(geneResults$mean),geneResults$pathways[[1]],rownames(eset),e
 useCAMERA<-FALSE
 
 t2<-calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha) 
+
+microbenchmark(
+calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha),
+calcVIF(eset,geneResults) )
+
+
+
 
 source("calcVIFArm.R")
 myVIF<-calcVIFArm(eset,geneResults)

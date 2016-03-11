@@ -16,21 +16,16 @@ calcVIFArm = function(eset,         ##a matrix of log2(expression values). This 
   if(class(geneResults) != "QSarray"){stop("geneResults must be a QSarray object, as created by makeComparison")}
   ##run VIF calculation on each gene set
   vif = sapply(names(geneSets),function(i){
- # **calling calcVIFarm.cpp ***
-     ##multiply matrix by the sd.alpha vectors
     GNames<-names(geneResults$mean)[names(geneResults$mean)%in%geneSets[[i]]]
     gs.i = which(rownames(eset)%in%GNames)
     if(length(gs.i)<2){warning("GeneSet '",i,"' contains one or zero overlapping genes. NAs produced.");return(NA)}
      if(!is.null(geneResults$sd.alpha)){
-       # a = geneResults$sd.alpha[rownames(eset)[gs.i]]
-       # covar.mat = t(covar.mat*a)*a
        #call calcVIFarm.cpp with sdalpha return the list, and set attrbts
        t<-calcVIFarmalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels), geneResults$sd.alpha) #dispatches for each i in geneResults$pathways list
-
-       }
+         }
          if(is.null(geneResults$sd.alpha)){
          #call calcVIFarm.cpp without sdalpha  return the list , set attrbts
-        t<-calcVIFarm_nosdalphaalt(names(geneResults$mean),geneResults$pathways[[i]],rownames(eset),eset,unique(labels))
+        t<-calcVIFarm_nosdalphaalt(names(geneResults$mean),gs.i, geneResults$pathways[[i]],rownames(eset),eset,levels(geneResults$labels))
         }
   return(as.vector(t$vif))
    })
