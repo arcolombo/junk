@@ -1,5 +1,5 @@
 ---
-title: "Qusage: Speeding up VIF in RcppArmadillo"
+title: "Qusage: Speeding up qusage in RcppArmadillo"
 author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
 output: 
     pdf_document:
@@ -15,8 +15,6 @@ Qusage can improve the speed of its algorithm by minimizing the cost of computai
 ##changes Armadillo C++ 
 trading NA flexibility slows down qusage runs, but having the user input no NAs enforcing good input, this speeds up calcIndividualExpressions, as well as using C++ libraries.
 
-#calcVif Function
-This test the local version which enforces no NA in Baseline or PostTreatment object, this reduces the flexibility. this test data is from the vignette where postTreatment was modified to be Baseline+20.4, a simple training set from the QuSAGE vignette.
 
 ```{r} 
 library(inline)
@@ -51,13 +49,13 @@ n.points<-2^12
 
 
 #setting up calcVif call objects
-r
+source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/qusageArm.R")
 useAllData<-TRUE
 useCAMERA<-FALSE
 ##### QuSage::qusage default calc
 defaultSage<-qusage(eset,labels,contrast,geneSets,var.equal=FALSE)
 mySage<-qusageArm(eset,labels,contrast,geneSets,var.equal=FALSE)
-cut<-qusageCutArm(eset,labels,contrast,geneSets,var.equal=FALSE)
+
 
 ```
 
@@ -74,49 +72,20 @@ speedUp<-microbenchmark(
 defaultSage<-qusage(eset,labels,contrast,geneSets,var.equal=FALSE),
 mySage<-qusageArm(eset,labels,contrast,geneSets,var.equal=FALSE), times=1000)
 
+autoplot(speedUp) 
 speedUp
 
 library(profr)
 defaultX<-profr(qusage(eset,labels,contrast,geneSets,var.equal=FALSE))
 myX<-profr(qusageArm(eset,labels,contrast,geneSets,var.equal=FALSE))
 
+##default qusage
 ggplot(defaultX)
+
+
+##with armadillo plot
 ggplot(myX)
 
-source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFArm.R")
-myVIF<-calcVIFArm(eset,geneResults)
 
 
 
-### TO DO ensure that calcVIFarm matches qusage::calcVIF.R
-
-identical(names(myVIF),names(ogVIF))
-identical(myVIF$labels,ogVIF$labels)
- identical(myVIF$contrast,ogVIF$contrast)
-identical(myVIF$n.samples,ogVIF$n.samples)
-identical(myVIF$mean,ogVIF$mean)
- identical(myVIF$sd.alpha,ogVIF$sd.alpha)
- identical(myVIF$dof,ogVIF$dof)
-identical(myVIF$var.method,ogVIF$var.method)
-identical(myVIF$pathways,ogVIF$pathways)
-identical(myVIF$path.mean,ogVIF$path.mean)
- identical(myVIF$path.size,ogVIF$path.size)
-identical(myVIF$ranges,ogVIF$ranges)
- identical(myVIF$n.points,ogVIF$n.points)
-all.equal(myVIF$path.PDF,ogVIF$path.PDF)
-all.equal(myVIF$vif,ogVIF$vif)
-
-
-qplot( as.vector(abs(myVIF$path.PDF-ogVIF$path.PDF)), xlab="Path PDF ") 
-
-qplot( as.vector(abs(myVIF$vif-ogVIF$vif)), xlab="VIF ")
-
-library(ggplot2)
-mb<-microbenchmark(
-myVIF<-calcVIFArm(eset,geneResults),
-ogVIF<-calcVIF(eset,geneResults),times=1000 )
-
-autoplot(mb)
-
-mb
-```
