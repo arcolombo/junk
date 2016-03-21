@@ -34,13 +34,13 @@ ISG.geneSet<-read.gmt(fileISG)
 geneSets<-ISG.geneSet[grepl("DER_IFN_GAMMA_RESPONSE_UP",names(ISG.geneSet))]
 
 #cpp functions
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaArm.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/sigmaSingle.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/bayesEstimation.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/notbayesEstimation.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/sigmaArm.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/sigmaSingle.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/bayesEstimation.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/notbayesEstimation.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarm.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarm_nosdalphaalt.cpp")
 
 pairVector<-NULL
 var.equal<-FALSE
@@ -49,7 +49,7 @@ n.points<-2^12
 
 
 #setting up calcVif call objects
-source("/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/qusageArm.R")
+source("/home/arcolombo/Documents/github_repos/SpeedSage/R/qusageArm.R")
 useAllData<-TRUE
 useCAMERA<-FALSE
 ##### QuSage::qusage default calc
