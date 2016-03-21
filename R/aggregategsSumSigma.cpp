@@ -17,13 +17,6 @@ int l = COLS.size();
 int o = geneSet.size();
 Rcpp::NumericVector idx(o);
 
-//for(int i = 0 ; i < l ; i++){
-    for(int j = 0 ; j < o ; j++){
-    
-     idx = std::find(idx.begin(),idx.end(),geneSet(j));
-    cout << idx << " ";
-    } //for geneSets names 
-//} //for COLS
 
 
 //set these objects as armadillo objects 
