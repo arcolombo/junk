@@ -4,27 +4,28 @@
 #include <vector>
 using namespace arma;
 //[[Rcpp::export]]
-extern "C" SEXP aggregategsSumSigma(SEXP Means, SEXP SDs, SEXP DOFs, SEXP COLSs, SEXP geneSets) {
+extern "C" SEXP aggregategsSumSigma(SEXP Means, SEXP SDs, SEXP DOFs, SEXP geneSets) {
 Rcpp::NumericVector Mean(Means);
 Rcpp::NumericVector SD(SDs);
 Rcpp::NumericVector DOF(DOFs);
-Rcpp::CharacterVector COLS(COLSs);
-Rcpp::CharacterVector geneSet(geneSets);
+Rcpp::NumericVector geneSet(geneSets);
 
+//for right now this holds for one gene set, need to test for multiple gene set case
 int n = Mean.size();
 int m = SD.size();
-int l = COLS.size();
 int o = geneSet.size();
-Rcpp::NumericVector idx(o);
-
-
-
 //set these objects as armadillo objects 
 arma::mat mean(Mean.begin(),Mean.size(),false);
 arma::mat sd(SD.begin(),SD.size(),false);
 arma::colvec dof(DOF.begin(),DOF.size(),false);
-//arma::colvec cols(COLS.begin(),COLS.size(),false);
-//arma::uvec geneset(geneSet.begin(),geneSet.size(),false);
+arma::vec indexes(geneSet.begin(),geneSet.size(),false);
+if(geneSet.size()==0){
+ cout<<"the names of the genes in your geneResults are not found in the geneSet ... "<<endl;
+  return Rcpp::List::create( Rcpp::Named("geneSets") = "NA");
+ 
+}
+
+
 //arma::mat sbase = zeros<arma::mat>(n,k);
 //arma::mat sbase(n,k);
 //arma::vec mn(n);
@@ -53,6 +54,6 @@ Rcpp::NumericVector Sda = Rcpp::wrap(sda);
    Sd.names() = Rcpp::List(Xr.attr("dimnames"))[0];
    Sda.names() = Rcpp::List(Xr.attr("dimnames"))[0];
  */
-return Rcpp::List::create( Rcpp::Named("geneSets") = Rcpp::wrap(idx));
+return Rcpp::List::create( Rcpp::Named("geneSets") = (indexes));
 
 }

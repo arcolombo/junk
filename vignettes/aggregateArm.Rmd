@@ -43,6 +43,7 @@ sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarm.cp
 sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarmalt.cpp")
 sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarm_nosdalphaalt.cpp")
 sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/aggregategsSumSigma.cpp")
+source(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/qusageArm.R")
 
 
 
@@ -58,10 +59,11 @@ nu = floor(min(results$dof,na.rm=T))
 defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
 
 
-myAg<-aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,names(geneResults$mean),geneSets[[1]])
+myAg<-aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,geneSets[[1]])
 
 
-
+```
+#Microbenchmarking subset positon COLS in geneSet
 
 microbenchmark(
 aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,names(geneResults$mean),geneSets[[1]]),
@@ -75,11 +77,27 @@ aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,names(geneR
 )
 
 
+ min        lq      mean    median        uq      max neval cld
+ 2169.671 2197.8315 2250.4651 2217.4730 2260.0395 3051.073   100   b
+  288.634  302.8425  314.9078  311.6455  322.9065  401.846   100  a 
+so I've used a double for loop to manually find index matches and used the C++ find method to find the index positions of names(geneResults$mean) %in% geneSets[[1]], and both of these functions were 10X slower in C++ compared to lapply. I will abandon my attempts here. 
 
 
-useAllData<-TRUE
-useCAMERA<-FALSE
-```
+nt i =0 ; i < o ; i++ ){ 
+  //cout << "searching " <<stdGeneSets.at(i) << endl;
+it = std::find(stdCOLS.begin(),stdCOLS.end(),stdGeneSets.at(i)) ;
+ if(it!=stdCOLS.end()) {
+  //cout<<"FOUND " << stdGeneSets.at(i)<< "at : "<<(it-stdCOLS.begin() + 1)<<endl; //+1 based
+  pos[i] = (std::distance(stdCOLS.begin(),it));  //0 based
+  }
+} // for loop find
+
+ min        lq      mean    median        uq      max neval cld
+ 2169.671 2197.8315 2250.4651 2217.4730 2260.0395 3051.073   100   b
+  288.634  302.8425  314.9078  311.6455  322.9065  401.846   100  a 
+ this find method , along with a double for loop is 10X slower than R */
+
+
 
 
 
