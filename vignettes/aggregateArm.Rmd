@@ -58,8 +58,9 @@ results = makeComparisonArm(eset, labels, contrast, pairVector=pairVector,var.eq
 nu = floor(min(results$dof,na.rm=T))
 defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
 
-
-myAg<-aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,geneSets[[1]])
+#will try looping over a list entries, issues with handling lists... the other option is to input the list, and all the names of the list; the hash::key seems to work for character inputs only.
+myAg<-aggregategsSumSigma(results$SD, results$dof,geneSets[[1]]) 
+#need to have cpp handle the list
 
 
 ```
@@ -99,6 +100,25 @@ it = std::find(stdCOLS.begin(),stdCOLS.end(),stdGeneSets.at(i)) ;
 
 
 
+mb<-microbenchmark(
+sapply(names(geneSets),function(i){
+      Indexes = geneSets[[i]]
+      x<-sqrt(sum((SD^2*(DOF/(DOF-2)))[Indexes]))
+      return(x)
+  }),
+
+ MinDof<-sapply(names(geneSets),function(i){
+      Indexes = geneSets[[i]]
+      if(length(Indexes)==0){return(NA)}
+      return(floor(min(DOF[Indexes])))
+      }),
+ SumSigma_MinDof<-sapply(names(geneSets),function(i){
+       Indexes = geneSets[[i]]
+       x<-aggregategsSumSigma(geneResults$SD,geneResults$dof,Indexes)
+    return(x) })
+
+
+)
 
 
 

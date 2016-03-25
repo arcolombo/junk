@@ -2,58 +2,38 @@
 #include <RcppArmadillo.h>
 #include <algorithm>
 #include <vector>
+#include <Rcpp.h>
+#include <math.h>
 using namespace arma;
 //[[Rcpp::export]]
-extern "C" SEXP aggregategsSumSigma(SEXP Means, SEXP SDs, SEXP DOFs, SEXP geneSets) {
-Rcpp::NumericVector Mean(Means);
+extern "C" SEXP aggregategsSumSigma( SEXP SDs, SEXP DOFs, SEXP geneSets) {
 Rcpp::NumericVector SD(SDs);
 Rcpp::NumericVector DOF(DOFs);
+
+
+//Rcpp::List geneSet(geneSets); I had trouble writing from a List perspective
 Rcpp::NumericVector geneSet(geneSets);
+//note this function assumes that each input is not NA
+//Fix Me: use sapply from sugar 
 
 //for right now this holds for one gene set, need to test for multiple gene set case
-int n = Mean.size();
-int m = SD.size();
-int o = geneSet.size();
+int n = SD.size();
+int m = DOF.size();
+int o = geneSet.size(); //we assume non-empty (reduce complexity)
+
 //set these objects as armadillo objects 
-arma::mat mean(Mean.begin(),Mean.size(),false);
-arma::mat sd(SD.begin(),SD.size(),false);
+arma::vec sd(SD.begin(),SD.size(),false);
 arma::colvec dof(DOF.begin(),DOF.size(),false);
-arma::vec indexes(geneSet.begin(),geneSet.size(),false);
-if(geneSet.size()==0){
- cout<<"the names of the genes in your geneResults are not found in the geneSet ... "<<endl;
-  return Rcpp::List::create( Rcpp::Named("geneSets") = "NA");
+arma::uvec idx = Rcpp::as<arma::uvec>(geneSet);
+arma::vec test(n);
+test =(sd%sd)%(dof/(dof-2));
+arma::vec sumSigma(1); //there is a sumSigma for each geneSet
+sumSigma = sqrt(sum(test.elem(idx-1)));
+arma::vec finalDof(1);
+finalDof = floor(min(dof.elem(idx-1)));
+
  
-}
-
-
-//arma::mat sbase = zeros<arma::mat>(n,k);
-//arma::mat sbase(n,k);
-//arma::vec mn(n);
-//arma::vec sd(n);
-//arma::vec sda(n);
-/*arma::mat x(Xr.begin(),n,k,false);
-arma::mat y(Yr.begin(),n,k,false);
-arma::mat z(Zr.begin(),1,1,false);
-arma::mat r(Vr.begin(),1,1,false);
-//arma::mat sbase = zeros<arma::mat>(n,k);
-arma::mat sbase(n,k);
-arma::vec mn(n);
-arma::vec sd(n);
-arma::vec sda(n);
-mn = (sum(y,1)-sum(x,1))/as_scalar(z);
-for (int colm=0;colm<k;colm++){
-sbase.col(colm) = x.col(colm) - y.col(colm) + mn;
-}
-sbase = sum(sbase%sbase,1)/(as_scalar(z)-1);
-sd  = sqrt((sbase/as_scalar(z)) + as_scalar(r));
-sda = sd/sqrt(sbase/as_scalar(z));
-Rcpp::NumericVector Mn = Rcpp::wrap(mn);
-Rcpp::NumericVector Sd = Rcpp::wrap(sd);
-Rcpp::NumericVector Sda = Rcpp::wrap(sda);
-   Mn.names() =  Rcpp::List(Xr.attr("dimnames"))[0];
-   Sd.names() = Rcpp::List(Xr.attr("dimnames"))[0];
-   Sda.names() = Rcpp::List(Xr.attr("dimnames"))[0];
- */
-return Rcpp::List::create( Rcpp::Named("geneSets") = (indexes));
+return Rcpp::List::create( Rcpp::Named("SumSigma") = Rcpp::wrap(sumSigma),
+                           Rcpp::Named("MinDof") = Rcpp::wrap(finalDof));
 
 }

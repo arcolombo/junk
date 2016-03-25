@@ -63,8 +63,8 @@ mySage<-qusageArm(eset,labels,contrast,geneSets,var.equal=FALSE)
 ```{r}
 library(speedSage)
 useCAMERA<-FALSE
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarmalt.cpp")
-sourceCpp(file="/home/anthonycolombo/Documents/qusage/qusage_repos/qusage_speed/R/calcVIFarm_nosdalphaalt.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarmalt.cpp")
+sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarm_nosdalphaalt.cpp")
 
 
 library(ggplot2)
