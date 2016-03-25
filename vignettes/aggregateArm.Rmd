@@ -57,9 +57,9 @@ n.points<-2^12
 results = makeComparisonArm(eset, labels, contrast, pairVector=pairVector,var.equal=var.equal)
 nu = floor(min(results$dof,na.rm=T))
 defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
-
+geneResults<-results
 #will try looping over a list entries, issues with handling lists... the other option is to input the list, and all the names of the list; the hash::key seems to work for character inputs only.
-myAg<-aggregategsSumSigma(results$SD, results$dof,geneSets[[1]]) 
+myAg<-aggregategsSumSigma(results$SD, results$dof,geneSets) 
 #need to have cpp handle the list
 
 
@@ -67,7 +67,8 @@ myAg<-aggregategsSumSigma(results$SD, results$dof,geneSets[[1]])
 #Microbenchmarking subset positon COLS in geneSet
 
 microbenchmark(
-aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,names(geneResults$mean),geneSets[[1]]),
+aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,names(
+geneResults$mean),geneSets[[1]]),
  lapply(geneSets,function(x){
     if(is.numeric(x)){
       if(any(!(x %in% 1:length(COLS)))){stop("Numeric gene set indices out of bounds")}
