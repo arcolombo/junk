@@ -6,23 +6,28 @@
 #include <math.h>
 using namespace arma;
 //[[Rcpp::export]]
-extern "C" SEXP aggregategsSumSigma( SEXP SDs, SEXP DOFs, SEXP geneSets) {
+extern "C" SEXP aggregatePDF(SEXP MaxDiffs, SEXP geneSets, SEXP SDs, SEXP nPoints, SEXP DOFs) {
+
+Rcpp::NumericVector MaxDiff(MaxDiffs);
+Rcpp::List geneSet(geneSets);
 Rcpp::NumericVector SD(SDs);
-Rcpp::NumericVector DOF(DOFs)://mail.google.com/mail/u/0/#inbox ;
-Rcpp::List geneSet(geneSets); 
+Rcpp::NumericVector nPoint(nPoints);
+Rcpp::NumericVector DOF(DOFs);
 
 
 //note this function assumes that each input is not NA
 //calculates the sd and mindof in order , names are assigned in R
+//the geneSets non-empty are checked in R level
 
 int n = SD.size();
 int m = DOF.size();
 int o = geneSet.size(); //we assume non-empty (reduce complexity)
-arma::vec sumSigma(o); //there is a sumSigma for each geneSet
-arma::vec finalDof(o);
+
+//need to run over a for loop
+arma::vec Norm = (2*MaxDiff)/(nPoint-1);
 
 
-//need to run the sapply function
+/*
 for ( int i=0 ; i < o ; i++) { //running a for loop
  SEXP nn = geneSet[i];
  Rcpp::NumericVector index(nn);
@@ -38,8 +43,8 @@ test =(asd%asd)%(adof/(adof-2));
 sumSigma(i) = sqrt(sum(test)); //summing the subsets
 finalDof(i) = floor(min(adof)); 
 }
-
+*/
   
-return Rcpp::List::create( Rcpp::Named("SumSigma") = Rcpp::wrap(sumSigma),
-                           Rcpp::Named("MinDof") = Rcpp::wrap(finalDof));
+return Rcpp::List::create( Rcpp::Named("Norm") = Rcpp::wrap(Norm));
+//                           Rcpp::Named("MinDof") = Rcpp::wrap(finalDof));
 }
