@@ -11,7 +11,7 @@ extern "C" SEXP aggregatePDF(SEXP MaxDiffs, SEXP geneSets, SEXP SDs, SEXP nPoint
 Rcpp::NumericVector MaxDiff(MaxDiffs);
 Rcpp::List geneSet(geneSets);
 Rcpp::NumericVector SD(SDs);
-Rcpp::NumericVector nPoint(nPoints);
+Rcpp::NumericVector nPoint(nPoints); //single constant vector lngth 1
 Rcpp::NumericVector DOF(DOFs);
 
 
@@ -22,10 +22,28 @@ Rcpp::NumericVector DOF(DOFs);
 int n = SD.size();
 int m = DOF.size();
 int o = geneSet.size(); //we assume non-empty (reduce complexity)
+int p = MaxDiff.size();   //o ==p  
+Rcpp::NumericVector Norm(o);
+Rcpp::NumericVector MaxDiffInt(o); //preallocating the size of list
+//arma::vec Norm(o);
+//arma::vec npoint(nPoint.begin(),nPoint.size(),false);
+//arma::vec maxdiff(MaxDiff.begin(),MaxDiff.size(),false);
+for ( int i =0; i<o ; i++){
+ SEXP nn = geneSet[i];
+ Rcpp::NumericVector index(nn);
+int p = index.size(); //enteries in each geneSet list element
 
-//need to run over a for loop
-arma::vec Norm = (2*MaxDiff)/(nPoint-1);
+Rcpp::NumericVector sd = SD[index -1]; //converting to 0 based
+Rcpp::NumericVector dof = DOF[index-1];
 
+Norm[i]= (2*MaxDiff[i])/(nPoint[0]-1); //normalize
+
+MaxDiffInt[i] = MaxDiff[i]/sd; 
+Rcpp::NumericVector x1 = Rcpp::seq(-MaxDiffInt[i],MaxDiffInt[i]
+
+
+
+} //for each list item
 
 /*
 for ( int i=0 ; i < o ; i++) { //running a for loop
@@ -45,6 +63,6 @@ finalDof(i) = floor(min(adof));
 }
 */
   
-return Rcpp::List::create( Rcpp::Named("Norm") = Rcpp::wrap(Norm));
+return Rcpp::List::create( Rcpp::Named("Norm") = Norm);
 //                           Rcpp::Named("MinDof") = Rcpp::wrap(finalDof));
 }

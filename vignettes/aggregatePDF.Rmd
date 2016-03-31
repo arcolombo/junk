@@ -1,5 +1,5 @@
 --
-title: "Qusage: Speeding up AggregateGeneSet in RcppArmadillo"
+title: "Qusage: Speeding up AggregatePDF in RcppArmadillo"
 author:  "Timothy J. Triche, Jr, Anthony R. Colombo"
 output: 
     pdf_document:
@@ -13,8 +13,8 @@ qusage is published software that is slow for large runs, SpeedSage corrects for
 Qusage can improve the speed of its algorithm by minimizing the cost of computaiton.
 
 
-#aggregateGeneSet Function
-This test will perform the computations in the apply functions in c++.  for makeComparisons and calcVIF, speedSage assumes the Welch's approximation for variances between groups being unequal.  Welch's approximation is used for aggregateGeneSet function. Previously the qusage.single/makeComparison in Armadillo/speedSage has a 1.3-1.48X speed up, aggregateGeneSet is the second bottleneck that must be accelerated.  the speed gains is calculated by the differences of the sub-routeins called by the parent-routines between respective methods. it is linear.
+#aggregatePDF Function
+This test will perform the computations in the apply functions in c++.  for makeComparisons and calcVIF, speedSage assumes the Welch's approximation for variances between groups being unequal.  Welch's approximation is used for aggregateGeneSet function. Previously the qusage.single/makeComparison in Armadillo/speedSage has a 1.3-1.48X speed up, aggregateGeneSet is the second bottleneck that must be accelerated, it gained milliseconds, and moderate gains.  the next bottlenect was the PDF generation and the multiConv function, this attempts to speed up the PDF.  the speed gains is calculated by the differences of the sub-routeins called by the parent-routines between respective methods. it is linear.
 
 ```{r} 
 library(inline)
@@ -44,90 +44,83 @@ sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarmalt
 sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/calcVIFarm_nosdalphaalt.cpp")
 sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/aggregategsSumSigma.cpp")
 source(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/qusageArm.R")
+#sourceCpp(file="/home/arcolombo/Documents/github_repos/SpeedSage/R/aggregatePDF.cpp")
 
 
 pairVector<-NULL
 var.equal<-FALSE
 filter.genes<-FALSE
 n.points<-2^12
+NumSDs<-abs(qt(10^-10,1:250))
+NumSDs[NumSDs>750] = 750
+armadillo<-TRUE
+
+
 
 #setting up aggregateGeneSetArm call objects
 results = makeComparisonArm(eset, labels, contrast, pairVector=pairVector,var.equal=var.equal)
 nu = floor(min(results$dof,na.rm=T))
 defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
 geneResults<-results
+ Means = geneResults$mean
+ COLS = names(Means)
 
-myAg<-aggregategsSumSigma(results$SD, results$dof,geneSets) 
-
-
-```
-#Microbenchmarking subset positon COLS in geneSet
-
-microbenchmark(
-aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,names(
-geneResults$mean),geneSets[[1]]),
- lapply(geneSets,function(x){
+ if(is.vector(geneSets) & !is.list(geneSets)){
+    n = deparse(substitute(geneSets))
+    geneSets = list(geneSets)
+    names(geneSets) = n
+  }
+  if(is.null(names(geneSets))){names(geneSets) = 1:length(geneSets)}
+  geneSets = lapply(geneSets,function(x){
     if(is.numeric(x)){
       if(any(!(x %in% 1:length(COLS)))){stop("Numeric gene set indices out of bounds")}
       return(x)
     }
  which(COLS%in%x)
   })
-)
 
 
- min        lq      mean    median        uq      max neval cld
- 2169.671 2197.8315 2250.4651 2217.4730 2260.0395 3051.073   100   b
-  288.634  302.8425  314.9078  311.6455  322.9065  401.846   100  a 
-so I've used a double for loop to manually find index matches and used the C++ find method to find the index positions of names(geneResults$mean) %in% geneSets[[1]], and both of these functions were 10X slower in C++ compared to lapply. I will abandon my attempts here. 
+#myAg<-aggregategsSumSigma(results$SD, results$dof,geneSets) 
 
+ if ( armadillo=="TRUE"){
+ SumSigma_MinDof<-aggregategsSumSigma(geneResults$SD,geneResults$dof,geneSets)
+  SumSigma<-unlist(SumSigma_MinDof)[1:length(geneSets)]
+  MinDof<-unlist(SumSigma_MinDof)[(length(geneSets)+1):length(unlist(SumSigma_MinDof))]
+names(SumSigma)<-names(geneSets)
+names(MinDof)<-names(geneSets)
+ }
+
+
+ MaxDiff<-pmax(NumSDs[MinDof]*SumSigma,1,na.rm=TRUE)
+
+myPDF<-aggregatePDF(MaxDiff,geneSets,geneResults$sd,n.points,geneResults$dof)
+
+```
 
 
 ```{r}
 
-#guts of the function, comparing the direct methods
-mb<-microbenchmark(
-sapply(names(geneSets),function(i){
-      Indexes = geneSets[[i]]
-      x<-sqrt(sum((SD^2*(DOF/(DOF-2)))[Indexes]))
-      return(x)
-  }),
-
- MinDof<-sapply(names(geneSets),function(i){
-      Indexes = geneSets[[i]]
-      if(length(Indexes)==0){return(NA)}
-      return(floor(min(DOF[Indexes])))
-      }),
- SumSigma_MinDof<-aggregategsSumSigma(geneResults$SD,geneResults$dof,geneSets)
-
-
-, times=2500)
-
-
-#mb shows microseconds speed up
-
-
-#need to check accuracy, and need to show speed.
-#need to check the aggregateGeneSet.R versus aggregateGeneSetArm.R  for 1 geneSet,  and 3 geneSets, compare accuracy and speed.  then wrap up.
 
 source("/home/arcolombo/Documents/github_repos/SpeedSage/R/aggregateGeneSet.R")
 source("/home/arcolombo/Documents/github_repos/SpeedSage/R/aggregateGeneSetArm.R")
 
-#accuracy
 
 
 defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
-#will try looping over a list entries, issues with handling lists... the other option is to input the list, and all the names of the list; the hash::key seems to work for character inputs only.
 myAg<-aggregateGeneSetArm(results, geneSets, silent=F,n.points=n.points, armadillo=TRUE)
 defAg<-aggregateGeneSetArm(results, geneSets, silent=F,n.points=n.points, armadillo=FALSE)
 
 singleMb<-microbenchmark(
 myAg<-aggregateGeneSetArm(results, geneSets, silent=F,n.points=n.points, armadillo=TRUE),
-defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points),times=1000)
+defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points),times=200)
 
 #single gene set no speed pu
-single Mb  
+singleMb  
 
+
+multiSets<-geneSets
+multiSets[2]<-geneSets[1]
+multiSets[3]<-geneSets[1]
 
 multiMb<-microbenchmark(
 myAg<-aggregateGeneSetArm(results, multiSets, silent=F,n.points=n.points, armadillo=TRUE),

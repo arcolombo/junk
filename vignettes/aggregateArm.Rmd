@@ -57,11 +57,38 @@ nu = floor(min(results$dof,na.rm=T))
 defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
 geneResults<-results
 
+
+ NumSDs<-abs(qt(10^-10,1:250))
+  NumSDs[NumSDs>750] = 750
+  Means = geneResults$mean
+  SD = geneResults$SD
+  DOF=geneResults$dof
+  COLS = names(Means)
+
+  if(is.vector(geneSets) & !is.list(geneSets)){
+    n = deparse(substitute(geneSets))
+    geneSets = list(geneSets)
+    names(geneSets) = n
+  }
+
+ if(is.null(names(geneSets))){names(geneSets) = 1:length(geneSets)}
+
+geneSets<- lapply(geneSets,function(x){
+    if(is.numeric(x)){
+      if(any(!(x %in% 1:length(COLS)))){stop("Numeric gene set indices out of bounds")}
+      return(x)
+    }
+ which(COLS%in%x)
+  })
+
+
 myAg<-aggregategsSumSigma(results$SD, results$dof,geneSets) 
 
 
 ```
 #Microbenchmarking subset positon COLS in geneSet
+
+I've tried to reduce  the which command using Rcpp find but it was much slower
 
 microbenchmark(
 aggregategsSumSigma(geneResults$mean,geneResults$SD, geneResults$dof,names(
@@ -117,25 +144,28 @@ source("/home/arcolombo/Documents/github_repos/SpeedSage/R/aggregateGeneSetArm.R
 
 
 defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points)
-#will try looping over a list entries, issues with handling lists... the other option is to input the list, and all the names of the list; the hash::key seems to work for character inputs only.
 myAg<-aggregateGeneSetArm(results, geneSets, silent=F,n.points=n.points, armadillo=TRUE)
 defAg<-aggregateGeneSetArm(results, geneSets, silent=F,n.points=n.points, armadillo=FALSE)
 
 singleMb<-microbenchmark(
 myAg<-aggregateGeneSetArm(results, geneSets, silent=F,n.points=n.points, armadillo=TRUE),
-defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points),times=1000)
+defaultAggregate = aggregateGeneSet(results, geneSets, silent=F, n.points=n.points),times=250)
 
 #single gene set no speed pu
-single Mb  
+singleMb  
+library(ggplot2)
+autoplot(singleMb)
 
-
+geneSets[2]<-geneSets[1]
+geneSets[3]<-geneSets[1]
+multiSets<-geneSets
 multiMb<-microbenchmark(
 myAg<-aggregateGeneSetArm(results, multiSets, silent=F,n.points=n.points, armadillo=TRUE),
-defaultAggregate = aggregateGeneSet(results, multiSets, silent=F, n.points=n.points),times=1000)
+defaultAggregate = aggregateGeneSet(results, multiSets, silent=F, n.points=n.points),times=250)
 
 multiMb
 #the gain is only in terms of microseconds, although additive, it is not noticeable.
-
+autoplot(multiMb)
 
 #the grouping of the PDF formation is also bottlenecking
 

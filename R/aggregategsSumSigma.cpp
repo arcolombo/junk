@@ -8,7 +8,7 @@ using namespace arma;
 //[[Rcpp::export]]
 extern "C" SEXP aggregategsSumSigma( SEXP SDs, SEXP DOFs, SEXP geneSets) {
 Rcpp::NumericVector SD(SDs);
-Rcpp::NumericVector DOF(DOFs)://mail.google.com/mail/u/0/#inbox ;
+Rcpp::NumericVector DOF(DOFs);
 Rcpp::List geneSet(geneSets); 
 
 
